@@ -112,7 +112,7 @@ class DataProcessing():
         column_filter : list
             list of columns in the new self.data
         """
-        self.data.data = self.data.data[column_filter]
+        self.data = self.data[column_filter]
  
     def set_nan_to_value(self, column, val=0):
         self.data.fillna({column: val})
