@@ -114,19 +114,19 @@ class DataProcessing():
         """
         self.data.data = self.data.data[column_filter]
 
+
 class LabelMaker():
     """
     This Class contains functions for creating numeric labels for the training
     categories. Encodes categorical values to intergers.
     """
-    
     def label_encoding(label_data, verbose=True):
         encoder = preprocessing.LabelEncoder()
         labels = encoder.fit_transform(label_data)
         if verbose:
             keys = encoder.classes_
             values = encoder.transform(keys)
-            print(dict(zip(keys, values)))
+            print(f"label encoding: {dict(zip(keys, values))}")
         return labels
     
     def onehot_encoding(data_list, verbose=True):
@@ -134,8 +134,14 @@ class LabelMaker():
         
         onehot_encoder = preprocessing.OneHotEncoder(sparse=False)
         labels = onehot_encoder.fit_transform(data_list)
+        if verbose:
+            keys = onehot_encoder.categories_[0]
+            values = onehot_encoder.inverse_transform(keys)
+            print(dict(zip(keys, values)))
+            print(keys, values)
+            
         return labels
-    
+
 
 class WeightMaker():
     """
@@ -205,4 +211,4 @@ class WeightMaker():
             
         new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
         return new_weights.values
-        
+    
