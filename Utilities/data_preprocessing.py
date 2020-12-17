@@ -35,8 +35,8 @@ class DataProcessing():
             e.g. ['ttH125']
         """
         label_dict = {}
-        signal_label = 0
-        noise_label = 1
+        signal_label = 'inv_signal'
+        noise_label = 'noise'
         
         for df in self.data_list:
             dataset = df.iloc[0]['dataset']
@@ -51,7 +51,7 @@ class DataProcessing():
     def return_dataset_labels(self):
         labels = self.data['dataset'].copy(deep=False)
         return labels.values.astype(str)
-        
+    
     def set_dataset_labels(self, event_labels):
         self.data['dataset'] = event_labels
         
@@ -72,6 +72,7 @@ class DataProcessing():
         columns_filtered : list
             list of columns to use for training
         """
+        print("columns to be used for event level neural network:")
         columns_filtered = []
         
         for idx, col in enumerate(self.all_columns):
@@ -79,7 +80,7 @@ class DataProcessing():
                 if col not in columns_to_ignore:
                     columns_filtered.append(col)
                     if verbose:
-                        print(f"{col:<32}: {self.data[col].dtypes}")
+                        print(f"    {col:<32}: {self.data[col].dtypes}")
         return columns_filtered
 
     def get_jet_columns(self, verbose=True):
@@ -98,9 +99,20 @@ class DataProcessing():
             if isinstance(self.data[col].iloc[0], np.ndarray):
                 columns_filtered.append(col)
                 if verbose:
-                    print(f"{col:<32}: {self.data[col].dtypes}")
+                    print(f"    {col:<32}: {self.data[col].dtypes}")
         return columns_filtered
+    
+    def filter_data(self, column_filter):
+        """
+        Remove all columns from the self.data dataframe except those in the
+        list column_filter.
 
+        Parameters
+        ----------
+        column_filter : list
+            list of columns in the new self.data
+        """
+        self.data.data = self.data.data[column_filter]
 
 class LabelMaker():
     """
