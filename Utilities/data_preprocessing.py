@@ -123,8 +123,71 @@ class LabelMaker():
     
 
 class WeightMaker():
+    """
+    This Class contains functions for creating the class weights and sample
+    weights to be added to the neural network.
+    """
     def event_class_weights(data):
+        """
+        This function creates a dictionary of class weights. The weights are
+        calculated from the number of events of each classification label.
+
+        Parameters
+        ----------
+        data : DataProcessing
+
+        Returns
+        -------
+        class_weights : dict
+        """
         weight_nominal_vals = data.data['weight_nominal']
-        print(f"len: {len(weight_nominal_vals)}")
-        return
+        total_events = len(weight_nominal_vals)
+        print(f"total number of events: {total_events}")
+        
+        unique_labels = data.data['dataset'].unique()
+        class_weights = []
+        
+        for label in unique_labels:
+            weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
+            weight = total_events/len(weight_selection)
+            print(f"    {total_events}/{len(weight_selection)} = {weight:0.3f}")
+            class_weights.append(weight)
+            
+        class_weight_dict = dict(zip(unique_labels, class_weights))
+        print(f"class weights: {class_weight_dict}")
+        return class_weights
+        
+
+    def weight_nominal_sample_weights(data):
+        """
+        This function uses the 'weight_nominal' parameter to create an event
+        by event sample_weight. The sample weights are normalised based on the
+        sum of the 'weight_nominal' for each classification label.
+
+        Parameters
+        ----------
+        data : DataProcessing
+
+        Returns
+        -------
+        new_weights : np.ndarray
+            Array containing the sample weights to be fed into the model.fit()
+        """
+        weight_nominal_vals = data.data['weight_nominal']
+        total_weight_nominal = weight_nominal_vals.sum()
+        print(f"total weight_nominal: {total_weight_nominal}")
+        
+        unique_labels = data.data['dataset'].unique()
+        weight_nominals_list = []
+        
+        for label in unique_labels:
+            weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
+            normalisation = total_weight_nominal/weight_selection.sum()
+            weight_selection *= normalisation
+            
+            print(f"    {total_weight_nominal}/{weight_selection.sum()} = {normalisation:0.3f}")
+            weight_nominals_list.append(weight_selection)
+            
+        new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
+        return new_weights.values
         
