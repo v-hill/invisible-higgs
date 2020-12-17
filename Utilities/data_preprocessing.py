@@ -52,6 +52,9 @@ class DataProcessing():
         labels = self.data['dataset'].copy(deep=False)
         return labels.values.astype(str)
         
+    def set_dataset_labels(self, event_labels):
+        self.data['dataset'] = event_labels
+        
     #--------------------------------------------------------------------------
     
     def get_event_columns(self, columns_to_ignore, verbose=True):
