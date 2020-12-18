@@ -113,12 +113,12 @@ class DataProcessing():
             list of columns in the new self.data
         """
         self.data = self.data[column_filter]
- 
-    def set_nan_to_value(self, column, val=0):
-        self.data.fillna({column: val})
+        
+    def set_nan_to_zero(self, column):
+        self.data = self.data.fillna({column: 0})
     
     def remove_nan(self, column):
-        pass
+        self.data.dropna()
     
     def nat_log_columns(self, columns):
         """
