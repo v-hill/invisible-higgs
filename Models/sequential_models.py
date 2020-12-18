@@ -51,3 +51,26 @@ def base(layer1, layer2, input_shape=12):
               loss=SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
     return model
+
+def base_with_dropout(layer1, layer2, input_shape=12):
+    """
+    Functionally identical to base model, but with the addition of two 
+    dropout layers after each hidden layer.
+    Returns
+    -------
+    model : keras.Sequential
+    """
+    # Define Sequential model with 2 hidden layers
+    model = keras.Sequential()
+    model.add(keras.Input(shape=(input_shape,)))
+    model.add(layers.Dense(layer1, activation="relu"))
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(layer2, activation="relu"))
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(2))
+    
+    # Compile model
+    model.compile(optimizer='adam',
+              loss=SparseCategoricalCrossentropy(from_logits=True),
+              metrics=['accuracy'])
+    return model
