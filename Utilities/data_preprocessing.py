@@ -119,7 +119,43 @@ class DataProcessing():
     
     def remove_nan(self, column):
         pass
+    
+    def nat_log_columns(self, columns):
+        """
+        This function takes the natural log of the values for each column 
+        listed in the 'columns' input variable. This is used to reduce the 
+        skewness in highly skewed data.
 
+        Parameters
+        ----------
+        columns : list
+            list of column names
+        """
+        for col in columns:
+            try:
+                self.data[col] = np.log(self.data[col])
+            except:
+                raise Exception(f"{col} column cannot be logged")
+            
+    def normalise_columns(self, span=(0, 1), columns=None):
+        """
+        Use the sklearn MinMaxScaler to scale each columns values to a given 
+        range. By deafult all columns are scaled, but a list of specific 
+        columns can optionally be passed in.
+        
+        Parameters
+        ----------
+        span : tuple, optional
+            A tuple where the first entry is the min and the second
+            value is the max. The default is (0, 1).
+        columns : list, optional
+            List of columns to scale. The default is None, meaning all columns.
+        """
+        mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
+        if columns==None:
+            self.data = mm_scaler.fit_transform(self.data)
+        else:
+            self.data[columns] = mm_scaler.fit_transform(self.data[columns])
 
 class LabelMaker():
     """
