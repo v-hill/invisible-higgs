@@ -218,3 +218,67 @@ class WeightMaker():
         new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
         return new_weights.values
     
+def split_data(event_data, labels, weights, test_size, shuffle=True):
+    """
+    This function splits a numpy array containg event data into test 
+    and train sets matched with the right labels.
+    
+    Parameters
+    ----------
+    event_data : np.darray
+        Event data in a (m,n) array where m is the different simulated event 
+        data and n is the features from an event.
+    labels : np.darray
+        The labels that correspond to the different events
+    weights : np.darray
+        The weights for each event to control for cross section of different 
+        events
+    test_size : float
+        The fraction of the data that is test data
+    shuffle : bool, optional
+        True if you want the data shuffled
+        
+    Results
+    -------
+    training_data : list 
+        Data in a [(m,n),l,w] list where l is the label for an event and w is 
+        weight. If shuffle is true then the events have been shuffled. This
+        data is to be trained on.
+    test_data : list 
+        Data in a [(m,n),l,w] this data is for a network to be tested on.
+    """
+    if shuffle is True:    
+        #Shuffle the training data by the same amount
+        rng_state = np.random.get_state()
+        
+        np.random.shuffle(event_data)
+        np.random.set_state(rng_state)
+        
+        np.random.shuffle(labels)
+        np.random.set_state(rng_state)
+        
+        np.random.shuffle(weights)
+        #test data does not need to be shuffled
+    
+    else:
+        pass
+    
+    train_length = int(len(event_data)*(1-test_size))
+    
+    training_data = event_data[:train_length,]
+    training_label = labels[:train_length]
+    training_weight = weights[:train_length]
+
+    test_data = event_data[train_length:,]
+    test_label = labels[train_length:]
+    test_weight = weights[train_length:]
+    
+    training_data = [training_data,
+                     training_label,
+                     training_weight]
+    
+    test_data = [test_data,
+                 test_label,
+                 test_weight]
+    
+    return training_data, test_data
