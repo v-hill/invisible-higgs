@@ -182,7 +182,7 @@ class WeightMaker():
             
         class_weight_dict = dict(zip(unique_labels, class_weights))
         print(f"class weights: {class_weight_dict}")
-        return class_weights
+        return class_weight_dict
         
 
     def weight_nominal_sample_weights(data):
