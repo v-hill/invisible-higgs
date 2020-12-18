@@ -9,9 +9,11 @@ import tensorflow as tf
 if USE_GPU:
     gpus = tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(gpus[0], True)
+    print("Running tensorflow on GPU")
 else:
     import os
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    print("Running tensorflow on CPU")
 
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -21,7 +23,7 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 
 def base(layer1, layer2, input_shape=12):
     """
-    This function creates a dense/fully connected neural network with 2 hidden
+    This functoin creates a dense/fully connected neuarl network with 2 hidden
     layers.
 
     Parameters
@@ -35,9 +37,7 @@ def base(layer1, layer2, input_shape=12):
 
     Returns
     -------
-    model : TYPE
-        DESCRIPTION.
-
+    model : keras.Sequential
     """
     # Define Sequential model with 2 hidden layers
     model = keras.Sequential()
