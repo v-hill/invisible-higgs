@@ -118,7 +118,11 @@ class DataProcessing():
         self.data = self.data.fillna({column: 0})
     
     def remove_nan(self, column):
-        self.data.dropna()
+        start_len = len(self.data)
+        self.data = self.data.dropna(subset=[column])
+        nans_removed = start_len-len(self.data)
+        print(f"{nans_removed} nan values removed")
+        print(f"    {nans_removed/start_len:.3%} of events removed")
     
     def nat_log_columns(self, columns):
         """
