@@ -4,11 +4,11 @@ This file contains the code for preparing the jet data for an RNN neural network
 """
 
 # Code from other files in the repo
-from Utilities.data_loader import  DataLoader
-from Utilities.data_preprocessing import DataProcessing
-from Utilities.data_preprocessing import LabelMaker
-from Utilities.data_preprocessing import WeightMaker
-# from Utilities.data_preprocessing import split_data
+from utilities.data_loader import  DataLoader
+from utilities.data_preprocessing import DataProcessing
+from utilities.data_preprocessing import LabelMaker
+from utilities.data_preprocessing import WeightMaker
+# from utilities.data_preprocessing import split_data
 
 # Python libraries
 import pandas as pd
