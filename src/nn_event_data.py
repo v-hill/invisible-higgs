@@ -5,11 +5,11 @@ classify different event types.
 """
 
 # Code from other files in the repo
-from Utilities.data_loader import  DataLoader
-import Models.sequential_models as sequential_models
-from Utilities.data_preprocessing import DataProcessing
-from Utilities.data_preprocessing import LabelMaker
-from Utilities.data_preprocessing import WeightMaker
+import models.sequential_models as sequential_models
+from utilities.data_loader import  DataLoader
+from utilities.data_preprocessing import DataProcessing
+from utilities.data_preprocessing import LabelMaker
+from utilities.data_preprocessing import WeightMaker
 
 # Python libraries
 import pandas as pd
