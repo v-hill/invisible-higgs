@@ -15,6 +15,6 @@ This repository is currently structured as follows.
         │   └── plotlib.py
         ├── nn_event_data.py
         ├── nn_events_hyperparameter_tuning.ipynb
-        └── nn_event_data.py        
+        └── rnn_jet_data.py
     
 <img src="./Images/code_structure_1.png" alt="drawing" width="600"/>
