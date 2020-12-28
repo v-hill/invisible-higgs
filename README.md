@@ -14,6 +14,7 @@ This repository is currently structured as follows.
         │   ├── data_preprocessing.py
         │   └── plotlib.py
         ├── nn_event_data.py
+        ├── nn_events_hyperparameter_tuning.ipynb
         └── nn_event_data.py        
     
 <img src="./Images/code_structure_1.png" alt="drawing" width="600"/>
