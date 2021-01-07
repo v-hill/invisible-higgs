@@ -17,4 +17,4 @@ This repository is currently structured as follows.
         ├── nn_events_hyperparameter_tuning.ipynb
         └── rnn_jet_data.py
     
-<img src="./Images/code_structure_1.png" alt="drawing" width="600"/>
+<img src="./Images/code_structure_3.png" alt="drawing" width="600"/>
