@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains the run code for a simple feedforward neural network to 
 classify different event types.
