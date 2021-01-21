@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains the code for preparing the jet data for an RNN neural network.
 """
