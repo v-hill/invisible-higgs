@@ -141,7 +141,7 @@ class DataProcessing():
             except:
                 raise Exception(f"{col} column cannot be logged")
             
-    def normalise_columns(self, span=(0, 1), columns=None):
+    def normalise_columns(self, span=(0, 1), columns=None, return_df = False):
         """
         Use the sklearn MinMaxScaler to scale each columns values to a given 
         range. By deafult all columns are scaled, but a list of specific 
@@ -154,12 +154,22 @@ class DataProcessing():
             value is the max. The default is (0, 1).
         columns : list, optional
             List of columns to scale. The default is None, meaning all columns.
+        return_df : bool, optional
+            If False the self.data will be returned as a ndarray if True 
+            self.data will be returned as a pandas dataframe
         """
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
         if columns==None:
+            columns = self.data.columns
             self.data = mm_scaler.fit_transform(self.data)
         else:
             self.data[columns] = mm_scaler.fit_transform(self.data[columns])
+        
+        if return_df == True:
+            self.data = pd.DataFrame(self.data)
+            self.data.columns = columns
+        else:
+            pass
 
 class LabelMaker():
     """
@@ -167,6 +177,23 @@ class LabelMaker():
     categories. Encodes categorical values to intergers.
     """
     def label_encoding(label_data, verbose=True):
+        """
+        Encodes the dataset labels into binary values 0 for signal and 1 for 
+        background. A column of the same length as the label_data is returned 
+        with the encoded labels returned.
+
+        Parameters
+        ----------
+        label_data : Pandas.series
+            Column from dataframe containing labal names, normally this will be
+            the 'dataset' column.
+
+        Returns
+        -------
+        labels : np.ndarray
+            Array with encoed labels corrosponding to event type (signal/noise)
+
+        """
         encoder = preprocessing.LabelEncoder()
         labels = encoder.fit_transform(label_data)
         if verbose:
@@ -205,7 +232,7 @@ class WeightMaker():
 
         Returns
         -------
-        class_weights : dict
+        class_weight_dict : dict
         """
         weight_nominal_vals = data.data['weight_nominal']
         total_events = len(weight_nominal_vals)
