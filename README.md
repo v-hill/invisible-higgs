@@ -5,6 +5,7 @@ Repository for 2020/2021 Physics MSci project "Searches for new physics at the L
 This repository is currently structured as follows.
 
     ├── Images
+    ├── dice_scripts
     ├── src                   
         ├── models   
         │   ├── recurrent_models.py
