@@ -8,6 +8,7 @@ networks.
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
+import tensorflow as tf
 
 class DataProcessing():
     def __init__(self, data):
@@ -290,6 +291,47 @@ class WeightMaker():
             
         new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
         return new_weights.values
+    
+# TODO: Normalise the jet data on a per variable basis
+
+# ---------------------------- Making RaggedTensor ----------------------------
+
+# See: 'Uniform inner dimensions' in tensorflow documentation:
+#       https://www.tensorflow.org/guide/ragged_tensor
+
+def make_ragged_tensor(input_data):
+    """
+    Turns a pandas dataframe of the jet data into a tensorflow ragged tensor.
+
+    Parameters
+    ----------
+    input_data : pandas.DataFrame
+        Dataframe containing the jet data.
+
+    Returns
+    -------
+    rt : tensorflow.RaggedTensor
+        Ragged tensor with 3 dimensions:
+        TensorShape([{Number of events}, {Number of jets in the event}, 6])
+        Each jet is specified by 6 values, with a variable number of jets per
+        event. This second dimension denoting the number of jets is a ragged
+        dimension.
+    """
+    data_list = input_data.values.tolist()
+    
+    row_current = 0
+    row_splits = [0]
+    rt_list_new = []
+    for idx, event in enumerate(data_list):
+        rt = np.stack(event, axis=0).T.tolist()
+        row_current += len(rt)
+        rt_list_new += rt
+        row_splits.append(row_current)
+    
+    rt = tf.RaggedTensor.from_row_splits(
+        values=rt_list_new,
+        row_splits=row_splits)
+    return rt
     
 def split_data(event_data, labels, weights, test_size, shuffle=True):
     """
