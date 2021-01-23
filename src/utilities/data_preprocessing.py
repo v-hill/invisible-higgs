@@ -83,10 +83,15 @@ class DataProcessing():
                         print(f"    {col:<32}: {self.data[col].dtypes}")
         return columns_filtered
 
-    def get_jet_columns(self, verbose=True):
+    def get_jet_columns(self, columns_to_ignore, verbose=True):
         """
         This function generates a list of the columns to be used in the 
         training data for the jet variables.
+        
+        Parameters
+        ----------
+        columns_to_ignore : list
+            List of columns to explicitly exclude
 
         Returns
         -------
@@ -97,9 +102,10 @@ class DataProcessing():
         
         for col in self.all_columns:
             if isinstance(self.data[col].iloc[0], np.ndarray):
-                columns_filtered.append(col)
-                if verbose:
-                    print(f"    {col:<32}: {self.data[col].dtypes}")
+                if col not in columns_to_ignore:
+                    columns_filtered.append(col)
+                    if verbose:
+                        print(f"    {col:<32}: {self.data[col].dtypes}")
         return columns_filtered
     
     def filter_data(self, column_filter):
