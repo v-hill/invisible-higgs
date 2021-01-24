@@ -10,6 +10,7 @@ import numpy as np
 from sklearn import preprocessing
 import tensorflow as tf
 
+
 class DataProcessing():
     def __init__(self, data):
         self.data_list = data.data
@@ -177,6 +178,10 @@ class DataProcessing():
             self.data.columns = columns
         else:
             pass
+        
+                
+                
+            
 
 class LabelMaker():
     """
@@ -332,6 +337,8 @@ def make_ragged_tensor(input_data):
         values=rt_list_new,
         row_splits=row_splits)
     return rt
+
+
     
 def split_data(event_data, labels, weights, test_size, shuffle=True):
     """
@@ -397,3 +404,33 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
                  test_weight]
     
     return training_data, test_data
+
+# TODO: The test data should be normalised using the fitting function that was
+#used to normalise the training set
+
+def normalise_jet_columns(data_train, span=(0,1), columns=None):
+    mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
+    if columns == None:
+        columns = data_train.columns
+    else:
+        pass
+    
+    for col in columns:
+        data_to_fit = np.concatenate(data_train[col].values).reshape(-1,1)
+        mm_scaler.fit(data_to_fit)
+        data_train[col] = data_train[col].apply(lambda x:x.reshape(-1,1))
+        data_train[col] = data_train[col].apply(mm_scaler.transform)
+        data_train[col] = data_train[col].apply(lambda x:x.reshape(-1))
+        
+    return data_train
+        
+            
+
+
+
+#------------------------Test and build new functions-------------------------
+'''Anything written in here will not be run when a module is called'''
+
+if __name__ == "__main__":
+    
+    pass
