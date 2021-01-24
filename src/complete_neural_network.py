@@ -12,6 +12,7 @@ from utilities.data_preprocessing import DataProcessing
 from utilities.data_preprocessing import LabelMaker
 from utilities.data_preprocessing import WeightMaker
 from utilities.data_preprocessing import make_ragged_tensor
+from utilities.data_preprocessing import normalise_jet_columns
 # from utilities.data_preprocessing import split_data
 
 # Python libraries
@@ -78,6 +79,12 @@ event_data_test_df = data_test[cols_events]
 jet_data_train_df = data_train[cols_jets] 
 jet_data_test_df = data_test[cols_jets]
 
+#Normalise the data
+# TODO: The test data should be normalised using the fitting function that was
+#used to normalise the training set
+jet_data_train_df = normalise_jet_columns(jet_data_train_df)
+jet_data_test_df = normalise_jet_columns(jet_data_test_df)
+
 jet_data_train_rt = make_ragged_tensor(jet_data_train_df)
 jet_data_test_rt = make_ragged_tensor(jet_data_test_df)
 
@@ -91,7 +98,12 @@ model1 = sequential_models.base(42, 4)
 
 print("Fit sequential model on training data...")
 START = time.time()
-history = model1.fit(event_data_train_df, labels_train, validation_data=(event_data_test_df, labels_test), sample_weight=sw_train, epochs=16, verbose=2)
+history_seq = model1.fit(event_data_train_df, 
+                          labels_train, 
+                          validation_data=(event_data_test_df, labels_test), 
+                          sample_weight=sw_train, 
+                          epochs=16, 
+                          verbose=2)
 print(f"    Elapsed training time: {time.time()-START:0.2f}s")
 
 test_loss_seq_nn, test_acc_seq_nn = model1.evaluate(event_data_test_df, labels_test, verbose=2)
@@ -100,20 +112,35 @@ print(f"    Test accuracy: {test_acc_seq_nn:0.5f}")
 # Long short term memory model
 
 model2 = recurrent_models.base()
-history = model2.fit(jet_data_train_rt, 
-                    labels_train, 
+history_rnn = model2.fit(jet_data_train_rt, 
+                    labels_train,
+                    validation_data=(jet_data_test_rt, labels_test),
                     sample_weight=sw_train, 
-                    epochs=4, 
+                    epochs=16, 
                     verbose=2)
 
-models = [model1 + model2]
+models = [model1,model2]
 
-test_loss_rnn, test_acc_rnn = model1.evaluate(jet_data_test_rt, labels_test, verbose=2)
+test_loss_rnn, test_acc_rnn = model2.evaluate(jet_data_test_rt, labels_test, verbose=2)
 
 #--------------------------------Combine models--------------------------------
+'''Henning suggested that "you can think of the output of the RNN as another 
+event level variable that you can add as another input to the FFN". Online 
+however I heard that you can simply average the results of the two neural nets.
+I am worried about the outputs though I think the outputs need to match.
+For the outputs to match I think we will have to use softmax activation
+functions as final layer connection. Finnally to evaluate if this is a good
+method or not we will need to use the test labels to evaluate. This script
+atm takes a while to run we should look into saving the models and even mabye
+the processed data.'''
 
-def ensemble(models,test_data):
-    pass
+
+probs1 = model1.predict(event_data_test_df)
+probs2 = model2.predict(jet_data_test_rt)
+
+probs_avg = (probs1 + probs2)/2
+    
+        
 
 
 
