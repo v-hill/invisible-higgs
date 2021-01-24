@@ -409,13 +409,32 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
 #used to normalise the training set
 
 def normalise_jet_columns(data_train, span=(0,1), columns=None):
-    mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
+    '''
+    This function normalises the data in the jet columns
+
+    Parameters
+    ----------
+    data_train : pandas.DataFrame
+        DataFrame containg the jet data with each element being a numpy array.
+    span : tuple, optional
+        A tuple where the first entry is the min and the second
+        value is the max. The default is (0, 1).
+    columns : list, optional
+        List of columns which contain the jet data. The default is None.
+
+    Returns
+    -------
+    data_train : pandas.DataFrame
+        Dataframe containg the normalised jet data.
+
+    '''
     if columns == None:
         columns = data_train.columns
     else:
         pass
     
     for col in columns:
+        mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
         data_to_fit = np.concatenate(data_train[col].values).reshape(-1,1)
         mm_scaler.fit(data_to_fit)
         data_train[col] = data_train[col].apply(lambda x:x.reshape(-1,1))
