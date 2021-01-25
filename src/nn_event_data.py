@@ -65,7 +65,9 @@ model = sequential_models.base(42, 4)
 
 print("Fit sequential model on training data...")
 START = time.time()
-history = model.fit(data_train, labels_train, validation_data=(data_test, labels_test), sample_weight=sw_train, epochs=16, verbose=2)
+history = model.fit(data_train, labels_train, 
+                    validation_data=(data_test, labels_test), 
+                    sample_weight=sw_train, epochs=16, verbose=2)
 print(f"    Elapsed training time: {time.time()-START:0.2f}s")
 
 test_loss, test_acc = model.evaluate(data_test, labels_test, verbose=2)
