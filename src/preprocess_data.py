@@ -8,10 +8,10 @@ from utilities.data_loader import  DataLoader
 from utilities.data_preprocessing import DataProcessing
 from utilities.data_preprocessing import LabelMaker
 from utilities.data_preprocessing import WeightMaker
-from utilities.data_preprocessing import make_ragged_tensor
 
 # Python libraries
-from sklearn.model_selection import train_test_split
+import copy
+import numpy as np
 
 ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
 data_to_collect = ['ttH125_part1-1', 
@@ -53,7 +53,6 @@ event_data.filter_data(cols_events)
 # Select only the jet columns from the data
 jet_data.filter_data(cols_jets)
 
-
 cols_to_log = ['HT', 'MHT_pt', 'MetNoLep_pt']
 event_data.nat_log_columns(cols_to_log)
 
@@ -61,7 +60,12 @@ min_max_scale_range = (0, 1)
 event_data.normalise_columns(min_max_scale_range)
 
 df_jet_data = jet_data.data
-rt_jet_data = make_ragged_tensor(df_jet_data)
+df_event_data = event_data.data
+
+# This step should be in the run script
+# rt_jet_data = make_ragged_tensor(df_jet_data)
     
 # -------------------------------- Data saving --------------------------------
 
+np.save('preprocessed_event_data.hdf', df_event_data)
+df_jet_data.to_hdf('preprocessed_jet_data.hdf', key='dfj', mode='w')
