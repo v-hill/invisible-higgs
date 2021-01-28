@@ -21,9 +21,9 @@ data_to_collect = ['ttH125_part1-1',
 
 # -------------------------------- Data setup --------------------------------
 
-event_data = np.load('preprocessed_event_data')
-event_labels = np.load('preprocessed_event_labels')
-sample_weight = np.load('preprocessed_sample_weights')
+event_data = np.load('preprocessed_event_data.npy', allow_pickle=True)
+event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
+sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
 
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
