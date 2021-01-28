@@ -179,10 +179,7 @@ class DataProcessing():
         else:
             pass
         
-                
-                
-            
-
+        
 class LabelMaker():
     """
     This Class contains functions for creating numeric labels for the training
@@ -296,8 +293,6 @@ class WeightMaker():
             
         new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
         return new_weights.values
-    
-# TODO: Normalise the jet data on a per variable basis
 
 # ---------------------------- Making RaggedTensor ----------------------------
 
@@ -339,7 +334,6 @@ def make_ragged_tensor(input_data):
     return rt
 
 
-    
 def split_data(event_data, labels, weights, test_size, shuffle=True):
     """
     This function splits a numpy array containg event data into test 
@@ -443,8 +437,6 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
         
     return data_train
         
-            
-
 
 
 #------------------------Test and build new functions-------------------------
