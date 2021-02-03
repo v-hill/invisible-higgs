@@ -12,6 +12,7 @@ import utilities.plotlib as plotlib
 import numpy as np
 import time
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
 data_to_collect = ['ttH125_part1-1', 
@@ -52,7 +53,7 @@ fig1 = plotlib.training_history_plot(history, 'Event neural network model accura
 # Make confsuion matrix
 labels_pred = model.predict(data_test)
 labels_pred = np.argmax(labels_pred, axis=1)
-cm = plotlib.confusion_matrix(labels_test, labels_pred)
+cm = confusion_matrix(labels_test, labels_pred)
 class_names = ['signal', 'background']
 title = 'Confusion matrix'
 
