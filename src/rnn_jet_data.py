@@ -58,3 +58,17 @@ print(f"    Elapsed training time: {time.time()-START:0.2f}s")
 test_loss, test_acc = model.evaluate(data_test_rt, labels_test, verbose=2)
 print(f"    Test accuracy: {test_acc:0.5f}")
 
+# --------------------------------- Plotting ----------------------------------
+
+# Plot training history
+fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy')
+
+# Make confsuion matrix
+labels_pred = model.predict(data_test_rt)
+labels_pred = np.argmax(labels_pred, axis=1)
+cm = confusion_matrix(labels_test, labels_pred)
+class_names = ['signal', 'background']
+title = 'Confusion matrix'
+
+# Plot confusion matrix
+fig2 = plotlib.confusion_matrix(cm, class_names, title)
