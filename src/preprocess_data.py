@@ -69,5 +69,9 @@ df_event_data = event_data.data
     
 # -------------------------------- Data saving --------------------------------
 
-np.save('preprocessed_event_data', df_event_data)
+np.save('preprocessed_event_data', event_data)
+np.save('preprocessed_event_labels', event_labels)
+np.save('preprocessed_sample_weights', sample_weight)
+
 df_jet_data.to_hdf('preprocessed_jet_data.hdf', key='dfj', mode='w')
+
