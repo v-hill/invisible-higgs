@@ -27,9 +27,11 @@ loader.find_files()
 loader.collect_data(data_to_collect)
 data = DataProcessing(loader)
 
-cols_to_ignore = ['entry', 'weight_nominal', 'hashed_filename']
-cols_events = data.get_event_columns(cols_to_ignore)
-cols_jets = data.get_jet_columns()
+cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename']
+cols_to_ignore2 = ['cleanJetMask']
+
+cols_events = data.get_event_columns(cols_to_ignore1)
+cols_jets = data.get_jet_columns(cols_to_ignore2)
 
 data.set_nan_to_zero('DiJet_mass')
 # data.remove_nan('DiJet_mass')
