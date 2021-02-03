@@ -26,28 +26,12 @@ data_to_collect = ['ttH125_part1-1',
 # -------------------------------- Data setup --------------------------------
 
 # Load in data
-loader = DataLoader(ROOT)
-loader.find_files()
-loader.collect_data(data_to_collect)
-data = DataProcessing(loader)
-
-cols_jets = data.get_jet_columns()
-
-signal_list = ['ttH125']
-data.label_signal_noise(signal_list)
-event_labels = LabelMaker.label_encoding(data.return_dataset_labels())
-data.set_dataset_labels(event_labels)
-
-# class_weight = WeightMaker.event_class_weights(data)
-sample_weight = WeightMaker.weight_nominal_sample_weights(data)
-
-# Select only the filtered columns from the data
-data.filter_data(cols_jets)
+df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
 
 # TODO: Normalise the jet data on a per variable basis
 
 df = data.data
-rt = make_ragged_tensor(df)
+rt = rt_jet_data = make_ragged_tensor(df_jet_data)
 
 print(f"Shape: {rt.shape}")
 print(f"Number of partitioned dimensions: {rt.ragged_rank}")
