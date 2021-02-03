@@ -3,18 +3,16 @@ This file contains the code for preparing the jet data for an RNN neural network
 """
 
 # Code from other files in the repo
-from utilities.data_loader import  DataLoader
 import models.recurrent_models as recurrent_models
-from utilities.data_preprocessing import DataProcessing
-from utilities.data_preprocessing import LabelMaker
-from utilities.data_preprocessing import WeightMaker
 from utilities.data_preprocessing import make_ragged_tensor
+import utilities.plotlib as plotlib
 
 # Python libraries
 import pandas as pd
 import numpy as np
 import time
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
 
 ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
 data_to_collect = ['ttH125_part1-1',
@@ -27,21 +25,36 @@ data_to_collect = ['ttH125_part1-1',
 
 # Load in data
 df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
+event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
+sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
 
 # TODO: Normalise the jet data on a per variable basis
 
-df = data.data
-rt = rt_jet_data = make_ragged_tensor(df_jet_data)
+df = df_jet_data
 
-print(f"Shape: {rt.shape}")
-print(f"Number of partitioned dimensions: {rt.ragged_rank}")
-print(f"Flat values shape: {rt.flat_values.shape}")
+test_fraction = 0.2
+data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
+    train_test_split(df_jet_data, event_labels, 
+                     sample_weight, test_size=test_fraction)
 
-# ------------------------------ Model training -------------------------------
+
+data_train_rt = rt_jet_data = make_ragged_tensor(data_train)
+data_test_rt = rt_jet_data = make_ragged_tensor(data_test)
+print(f"Shape: {data_train_rt.shape}")
+print(f"Number of partitioned dimensions: {data_train_rt.ragged_rank}")
+print(f"Flat values shape: {data_train_rt.flat_values.shape}")
+
+# # ------------------------------ Model training -------------------------------
 
 model = recurrent_models.base()
-history = model.fit(rt, 
-                    event_labels, 
-                    sample_weight=sample_weight, 
-                    epochs=4, 
-                    verbose=2)
+
+print("Fitting RNN model on jet training data...")
+START = time.time()
+history = model.fit(data_train_rt, labels_train, 
+                    validation_data=(data_test_rt, labels_test), 
+                    sample_weight=sw_train, epochs=16, verbose=2)
+print(f"    Elapsed training time: {time.time()-START:0.2f}s")
+
+test_loss, test_acc = model.evaluate(data_test_rt, labels_test, verbose=2)
+print(f"    Test accuracy: {test_acc:0.5f}")
+
