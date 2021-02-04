@@ -28,10 +28,6 @@ df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
 event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
 sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
 
-# TODO: Normalise the jet data on a per variable basis
-
-df = df_jet_data
-
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
     train_test_split(df_jet_data, event_labels, 
