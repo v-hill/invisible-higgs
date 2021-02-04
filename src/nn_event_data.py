@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains the run code for a simple feedforward neural network to 
 classify different event types.
@@ -28,14 +27,14 @@ sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
 
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
-    train_test_split(event_data.data, event_labels, 
+    train_test_split(event_data, event_labels, 
                      sample_weight, test_size=test_fraction)
 
 # ------------------------------ Model training -------------------------------
 
 model = sequential_models.base(42, 4)
 
-print("Fit sequential model on training data...")
+print("Fitting sequential model on event training data...")
 START = time.time()
 history = model.fit(data_train, labels_train, 
                     validation_data=(data_test, labels_test), 
