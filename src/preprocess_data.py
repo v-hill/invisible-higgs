@@ -8,6 +8,7 @@ from utilities.data_loader import  DataLoader
 from utilities.data_preprocessing import DataProcessing
 from utilities.data_preprocessing import LabelMaker
 from utilities.data_preprocessing import WeightMaker
+from utilities.data_preprocessing import normalise_jet_columns
 
 # Python libraries
 import copy
@@ -61,12 +62,9 @@ event_data.nat_log_columns(cols_to_log)
 min_max_scale_range = (0, 1)
 event_data.normalise_columns(min_max_scale_range)
 
-df_jet_data = jet_data.data
+df_jet_data = normalise_jet_columns(jet_data.data)
 df_event_data = event_data.data
 
-# This step should be in the run script
-# rt_jet_data = make_ragged_tensor(df_jet_data)
-    
 # -------------------------------- Data saving --------------------------------
 
 np.save('preprocessed_event_data', event_data.data)
@@ -74,4 +72,3 @@ np.save('preprocessed_event_labels', event_labels)
 np.save('preprocessed_sample_weights', sample_weight)
 
 df_jet_data.to_hdf('preprocessed_jet_data.hdf', key='dfj', mode='w')
-
