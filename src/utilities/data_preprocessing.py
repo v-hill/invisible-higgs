@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains Classes for preparing the data for input into the neural 
 networks.
@@ -9,7 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn import preprocessing
 import tensorflow as tf
-
+import time
 
 class DataProcessing():
     def __init__(self, data):
@@ -179,7 +178,6 @@ class DataProcessing():
         else:
             pass
         
-        
 class LabelMaker():
     """
     This Class contains functions for creating numeric labels for the training
@@ -224,7 +222,6 @@ class LabelMaker():
             
         return labels
 
-
 class WeightMaker():
     """
     This Class contains functions for creating the class weights and sample
@@ -260,7 +257,6 @@ class WeightMaker():
         print(f"class weights: {class_weight_dict}")
         return class_weight_dict
         
-
     def weight_nominal_sample_weights(data):
         """
         This function uses the 'weight_nominal' parameter to create an event
@@ -333,7 +329,6 @@ def make_ragged_tensor(input_data):
         row_splits=row_splits)
     return rt
 
-
 def split_data(event_data, labels, weights, test_size, shuffle=True):
     """
     This function splits a numpy array containg event data into test 
@@ -369,14 +364,12 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
         
         np.random.shuffle(event_data)
         np.random.set_state(rng_state)
-        
         np.random.shuffle(labels)
         np.random.set_state(rng_state)
-        
         np.random.shuffle(weights)
-        #test data does not need to be shuffled
-    
+        
     else:
+        #test data does not need to be shuffled
         pass
     
     train_length = int(len(event_data)*(1-test_size))
@@ -399,9 +392,6 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
     
     return training_data, test_data
 
-# TODO: The test data should be normalised using the fitting function that was
-#used to normalise the training set
-
 def normalise_jet_columns(data_train, span=(0,1), columns=None):
     '''
     This function normalises the data in the jet columns
@@ -422,26 +412,27 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
         Dataframe containg the normalised jet data.
 
     '''
+    start = time.time()
+    df = data_train.copy(deep=True)
     if columns == None:
-        columns = data_train.columns
+        columns = data_train.columns.tolist()
     else:
         pass
     
     for col in columns:
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
-        data_to_fit = np.concatenate(data_train[col].values).reshape(-1,1)
+        data_to_fit = np.concatenate(df[col].values).reshape(-1,1)
         mm_scaler.fit(data_to_fit)
-        data_train[col] = data_train[col].apply(lambda x:x.reshape(-1,1))
-        data_train[col] = data_train[col].apply(mm_scaler.transform)
-        data_train[col] = data_train[col].apply(lambda x:x.reshape(-1))
+        df[col] = df[col].apply(lambda x:x.reshape(-1,1))
+        df[col] = df[col].apply(mm_scaler.transform)
+        df[col] = df[col].apply(lambda x:x.reshape(-1))
         
-    return data_train
-        
-
+        print(f"    {time.time()-start}")
+    print(f"End {time.time()-start}")
+    return df
 
 #------------------------Test and build new functions-------------------------
 '''Anything written in here will not be run when a module is called'''
 
 if __name__ == "__main__":
-    
     pass
