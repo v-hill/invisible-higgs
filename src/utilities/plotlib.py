@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains code for producing matplotlib figures for data 
 visualisation.
