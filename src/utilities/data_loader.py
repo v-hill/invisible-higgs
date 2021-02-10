@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 This file contains Classes for loading data into Python.
 """
