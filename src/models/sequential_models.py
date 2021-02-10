@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 """
-This file contains functions for generating sequential models.
+This file contains functions for generating sequential neural network 
+models.
 """
 
 USE_GPU = False
