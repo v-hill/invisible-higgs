@@ -90,3 +90,37 @@ def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=300, colourbar=
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     return fig
+
+def plot_roc(pred, y, figsize=(4, 4), dpi=300):
+    """
+    Plots the ROC curve of a keras model.
+    
+    Parameters
+    ----------
+    pred : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    figsize : TYPE, optional
+        DESCRIPTION. The default is (4, 4).
+    dpi : TYPE, optional
+        DESCRIPTION. The default is 300.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
+    fpr, tpr, _ = roc_curve(y, pred)
+    roc_auc = auc(fpr, tpr)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
+    plt.plot([0, 1], [0, 1], 'k--')
+    
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    
+    plt.title('Receiver Operating Characteristic (ROC)')
+    plt.legend(loc="lower right")
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    return fig
