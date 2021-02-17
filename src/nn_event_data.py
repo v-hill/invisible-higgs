@@ -13,7 +13,6 @@ import time
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 
-ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
 data_to_collect = ['ttH125_part1-1', 
                    'TTTo2L2Nu', 
                    'TTToHadronic', 
@@ -58,3 +57,7 @@ title = 'Confusion matrix'
 
 # Plot confusion matrix
 fig2 = plotlib.confusion_matrix(cm, class_names, title)
+
+# Plot ROC curve
+pred = model.predict(data_test)
+fig = plotlib.plot_roc(pred,labels_test)
