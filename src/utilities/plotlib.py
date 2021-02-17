@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 from textwrap import wrap
+from sklearn.metrics import roc_curve, auc
 
 # ---------------------------- Plotting functions -----------------------------
 
@@ -91,10 +92,11 @@ def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=300, colourbar=
     plt.xlabel('Predicted label')
     return fig
 
-def plot_roc(pred, y, figsize=(4, 4), dpi=300):
+def plot_roc(pred, y, figsize=(6, 4), dpi=300):
     """
     Plots the ROC curve of a keras model.
     
+
     Parameters
     ----------
     pred : TYPE
