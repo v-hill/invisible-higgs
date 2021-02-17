@@ -59,5 +59,4 @@ title = 'Confusion matrix'
 fig2 = plotlib.confusion_matrix(cm, class_names, title)
 
 # Plot ROC curve
-pred = model.predict(data_test)
-fig = plotlib.plot_roc(pred,labels_test)
+fig = plotlib.plot_roc(labels_pred,labels_test)
