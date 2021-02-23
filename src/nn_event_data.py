@@ -31,7 +31,7 @@ data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
 
 # ------------------------------ Model training -------------------------------
 
-model = sequential_models.base(42, 4)
+model = sequential_models.base2(42, 4)
 
 print("Fitting sequential model on event training data...")
 START = time.time()
@@ -43,15 +43,20 @@ print(f"    Elapsed training time: {time.time()-START:0.2f}s")
 test_loss, test_acc = model.evaluate(data_test, labels_test, verbose=2)
 print(f"    Test accuracy: {test_acc:0.5f}")
 
-# --------------------------------- Plotting ----------------------------------
+# # --------------------------------- Plotting ----------------------------------
 
 # Plot training history
 fig1 = plotlib.training_history_plot(history, 'Event neural network model accuracy')
 
-# Make confsuion matrix
+# Get model predictions
 labels_pred = model.predict(data_test)
-labels_pred = np.argmax(labels_pred, axis=1)
-cm = confusion_matrix(labels_test, labels_pred)
+
+# Convert predictions into binary values
+cutoff_threshold = 0.5 
+labels_pred_binary = np.where(labels_pred > cutoff_threshold, 1, 0)
+
+# Make confsuion matrix
+cm = confusion_matrix(labels_test, labels_pred_binary)
 class_names = ['signal', 'background']
 title = 'Confusion matrix'
 
@@ -59,4 +64,5 @@ title = 'Confusion matrix'
 fig2 = plotlib.confusion_matrix(cm, class_names, title)
 
 # Plot ROC curve
-fig = plotlib.plot_roc(labels_pred,labels_test)
+title_roc = 'ROC curve for event data model'
+fig = plotlib.plot_roc(labels_pred, labels_test, title_roc)
