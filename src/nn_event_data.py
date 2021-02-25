@@ -29,6 +29,15 @@ data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
     train_test_split(event_data, event_labels, 
                      sample_weight, test_size=test_fraction)
 
+# Take a sample of the data to speed up training
+sample_num = 2000
+data_train = data_train[:sample_num]
+data_test = data_test[:sample_num]
+labels_train = labels_train[:sample_num]
+labels_test = labels_test[:sample_num]
+sw_train = sw_train[:sample_num]
+sw_test = sw_test[:sample_num]
+
 # ------------------------------ Model training -------------------------------
 
 model = sequential_models.base2(42, 4)
