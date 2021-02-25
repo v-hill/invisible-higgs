@@ -50,7 +50,6 @@ def base(layer1, layer2, input_shape=12):
               metrics=['accuracy'])
     return model
 
-
 def base2(layer1, layer2, input_shape=12):
     """
     This functoin creates a dense/fully connected neuarl network with 2 hidden
