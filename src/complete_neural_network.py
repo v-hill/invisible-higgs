@@ -5,149 +5,86 @@ network (for the jet data).
 """
 
 # Code from other files in the repo
-from utilities.data_loader import  DataLoader
-import models.sequential_models as sequential_models
-import models.recurrent_models as recurrent_models
-from utilities.data_preprocessing import DataProcessing
-from utilities.data_preprocessing import LabelMaker
-from utilities.data_preprocessing import WeightMaker
 from utilities.data_preprocessing import make_ragged_tensor
 from utilities.data_preprocessing import normalise_jet_columns
-# from utilities.data_preprocessing import split_data
 
 # Python libraries
 import pandas as pd
 import numpy as np
-import time
 from sklearn.model_selection import train_test_split
 
-#--------------------------------Load data------------------------------------
+#------------------------------- Load event data ------------------------------
 
-ROOT = "C:\\Users\\user\\Documents\\Fifth Year\\ml_postproc"
-data_to_collect = ['ttH125_part1-1', 
-                   'TTTo2L2Nu', 
-                   'TTToHadronic', 
-                   'TTToSemiLeptonic']
+event_data = np.load('preprocessed_event_data.npy', allow_pickle=True)
+event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
+sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
+
+# Generate a fixed random state
+random_state = np.random.randint(50)
+test_fraction = 0.2
+
+data_train1, data_test1, labels_train, labels_test, sw_train, sw_test  = \
+            train_test_split(event_data,
+                             event_labels,
+                             sample_weight,
+                             test_size=test_fraction,
+                             random_state=random_state)
+
+#-------------------------------- Load jet data -------------------------------
 
 # Load in data
-loader = DataLoader(ROOT)
-loader.find_files()
-loader.collect_data(data_to_collect)
-data = DataProcessing(loader)
+df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
 
-cols_to_ignore = ['entry', 'weight_nominal', 'hashed_filename']
-cols_events = data.get_event_columns(cols_to_ignore)
+data_train2, data_test2, labels_train, labels_test, sw_train, sw_test  = \
+            train_test_split(df_jet_data,
+                             event_labels,
+                             sample_weight,
+                             test_size=test_fraction,
+                             random_state=random_state)
 
-cols_to_ignore = ['cleanJetMask']
-cols_jets = data.get_jet_columns(cols_to_ignore)
-
-data.set_nan_to_zero('DiJet_mass')
-# data.remove_nan('DiJet_mass')
-
-signal_list = ['ttH125']
-data.label_signal_noise(signal_list)
-#event_labels = LabelMaker.onehot_encoding(data.return_dataset_labels())
-event_labels = LabelMaker.label_encoding(data.return_dataset_labels())
-data.set_dataset_labels(event_labels)
-
-# class_weight = WeightMaker.event_class_weights(data)
-sample_weight = WeightMaker.weight_nominal_sample_weights(data)
-
-# Select only the filtered columns from the data
-data.filter_data(cols_events + cols_jets)
-
-cols_to_log = ['HT', 'MHT_pt', 'MetNoLep_pt']
-data.nat_log_columns(cols_to_log)
-
-min_max_scale_range = (0, 1)
-
-#When using the argument col_events the data.data object remains a dataframe
-data.normalise_columns(min_max_scale_range, cols_events) 
-
-test_fraction = 0.2
-data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
-    train_test_split(data.data, event_labels, sample_weight, test_size=test_fraction)
-
-#The data now needs to be split. The sequential model will be trained on the 
-#event data and the recurent model will be trained on the jet data once it has
-#been transformed to a ragged tensor
-
-event_data_train_df = data_train[cols_events]
-event_data_test_df = data_test[cols_events]
-
-#Jet data needs to be turned into a raged tensor
-jet_data_train_df = data_train[cols_jets] 
-jet_data_test_df = data_test[cols_jets]
-
-#Normalise the data
-# TODO: The test data should be normalised using the fitting function that was
-#used to normalise the training set
-jet_data_train_df = normalise_jet_columns(jet_data_train_df)
-jet_data_test_df = normalise_jet_columns(jet_data_test_df)
+#normalise the training set
+jet_data_train_df = normalise_jet_columns(data_train2)
+jet_data_test_df = normalise_jet_columns(data_test2)
 
 jet_data_train_rt = make_ragged_tensor(jet_data_train_df)
 jet_data_test_rt = make_ragged_tensor(jet_data_test_df)
 
-# TODO: Explore using parallel progrmaing to train each model
+# # TODO: Explore using parallel progrmaing to train each model
 
-#--------------------------------Train models----------------------------------
+#------------------------- Create combined neural net -------------------------
 
-#Sequential model
+from tensorflow import keras
+from tensorflow.keras import layers
 
-model1 = sequential_models.base(42, 4)
+# define two seperate inputs
+inputA = keras.Input(shape=12)
+inputB = keras.Input(shape=[None, 6], ragged=True)
 
-print("Fit sequential model on training data...")
-START = time.time()
-history_seq = model1.fit(event_data_train_df, 
-                          labels_train, 
-                          validation_data=(event_data_test_df, labels_test), 
-                          sample_weight=sw_train, 
-                          epochs=16, 
-                          verbose=2)
-print(f"    Elapsed training time: {time.time()-START:0.2f}s")
+# create the sequential event nn
+x = layers.Dense(42, activation="relu")(inputA)
+x = layers.Dense(4, activation="relu")(x)
+x = keras.Model(inputs=inputA, outputs=x)
 
-test_loss_seq_nn, test_acc_seq_nn = model1.evaluate(event_data_test_df, labels_test, verbose=2)
-print(f"    Test accuracy: {test_acc_seq_nn:0.5f}")
+# the second branch opreates on the second input
+y = keras.layers.LSTM(64)(inputB)
+y = keras.layers.Dense(4, activation="relu")(y)
+y = keras.Model(inputs=inputB, outputs=y)
 
-# Long short term memory model
+# combine the output of the two branches
+combined = layers.Concatenate()([x.output, y.output])
 
-model2 = recurrent_models.base()
-history_rnn = model2.fit(jet_data_train_rt, 
-                    labels_train,
-                    validation_data=(jet_data_test_rt, labels_test),
-                    sample_weight=sw_train, 
-                    epochs=16, 
-                    verbose=2)
+# apply a FC layer and then a regression prediction on the
+# combined outputs
+z = layers.Dense(2, activation="relu")(combined)
+z = layers.Dense(1, activation='softmax')(z)
 
-models = [model1,model2]
+model = keras.Model(inputs=[x.input, y.input], outputs=z)
 
-test_loss_rnn, test_acc_rnn = model2.evaluate(jet_data_test_rt, labels_test, verbose=2)
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-#--------------------------------Combine models--------------------------------
-'''Henning suggested that "you can think of the output of the RNN as another 
-event level variable that you can add as another input to the FFN". Online 
-however I heard that you can simply average the results of the two neural nets.
-I am worried about the outputs though I think the outputs need to match.
-For the outputs to match I think we will have to use softmax activation
-functions as final layer connection. Finnally to evaluate if this is a good
-method or not we will need to use the test labels to evaluate. This script
-atm takes a while to run we should look into saving the models and even mabye
-the processed data.'''
-
-
-probs1 = model1.predict(event_data_test_df)
-probs2 = model2.predict(jet_data_test_rt)
-
-probs_avg = (probs1 + probs2)/2
-    
-        
-
-
-
-
-
-
-
-
-
+model.fit(x=[data_train1, jet_data_train_rt], y=labels_train, 
+          validation_data=([data_test1, jet_data_test_rt], labels_test), 
+          sample_weight=sw_train, 
+          epochs=16, 
+          verbose=2)
 
