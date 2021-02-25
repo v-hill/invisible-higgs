@@ -38,13 +38,13 @@ def base(input_shape=[None, 6]):
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
         keras.layers.InputLayer(input_shape=input_shape, ragged=True),
-        keras.layers.LSTM(64),  
-        keras.layers.Dense(2, activation='softmax')
+        keras.layers.LSTM(64),
+        keras.layers.Dense(8, activation='relu'),
+        keras.layers.Dense(1, activation='sigmoid')
     ])
     
+    # Compile model
     model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+              loss='binary_crossentropy',
               metrics=['accuracy'])
     return model
-
-model = base()
