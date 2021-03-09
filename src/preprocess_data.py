@@ -20,6 +20,9 @@ data_to_collect = ['ttH125_part1-1',
                    'TTToHadronic', 
                    'TTToSemiLeptonic']
 
+data_to_collect = ['ttH125_part1-1', 
+                   'TTTo2L2Nu']
+
 # -------------------------------- Data setup --------------------------------
 
 # Load in data

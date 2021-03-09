@@ -282,9 +282,9 @@ class WeightMaker():
         for label in unique_labels:
             weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
             normalisation = total_weight_nominal/weight_selection.sum()
+            print(f"    {total_weight_nominal}/{weight_selection.sum()} = {normalisation:0.3f}")
             weight_selection *= normalisation
             
-            print(f"    {total_weight_nominal}/{weight_selection.sum()} = {normalisation:0.3f}")
             weight_nominals_list.append(weight_selection)
             
         new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
