@@ -211,17 +211,47 @@ class LabelMaker():
         return labels
     
     def onehot_encoding(data_list, verbose=True):
+        """
+        Produce a onehot encoding of the event labels.
+
+        Parameters
+        ----------
+        data_list : numpy.ndarray
+            data.return_dataset_labels() 
+        verbose : Bool, optional
+            Prints the encoding to console. The default is True.
+
+        Returns
+        -------
+        df_labels : dict
+            Dictionary of encoding.
+        encoding_dict : pandas.DataFrame
+            Dataframe of onehot encoded labels.
+        """
         data_list = data_list.reshape(-1, 1)
         
         onehot_encoder = preprocessing.OneHotEncoder(sparse=False)
         labels = onehot_encoder.fit_transform(data_list)
+        
+        keys = onehot_encoder.categories_[0]
+        values = onehot_encoder.fit_transform(keys.reshape(-1, 1))
+        encoding_dict = dict(zip(keys.tolist(), values.tolist()))
+        
+        # Make column names
+        col_names = ['']*np.shape(labels)[1]
+        for i, key in enumerate(keys):
+            index = np.argwhere(values[i]==1)[0][0]
+            col_name = 'onehot_' + str(key)
+            col_names[index] = col_name
+        
         if verbose:
-            keys = onehot_encoder.categories_[0]
-            values = onehot_encoder.inverse_transform(keys)
-            print(dict(zip(keys, values)))
-            print(keys, values)
-            
-        return labels
+            print('onehot encoding:')
+            for item in encoding_dict.items():
+                print(f'    label: {item[0]:20} encoding: {item[1]}')
+                
+        df_labels = pd.DataFrame(data=labels, columns=col_names)
+        
+        return df_labels, encoding_dict
 
 class WeightMaker():
     """
