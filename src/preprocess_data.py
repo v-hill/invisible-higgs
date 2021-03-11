@@ -3,6 +3,8 @@ This script is used to process our data and generate pre-processed data files,
 which can be fed directly in the neural network models.
 """
 
+# ---------------------------------- Imports ----------------------------------
+
 # Code from other files in the repo
 from utilities.data_loader import  DataLoader
 from utilities.data_preprocessing import DataProcessing
@@ -11,41 +13,62 @@ from utilities.data_preprocessing import WeightMaker
 from utilities.data_preprocessing import normalise_jet_columns
 
 # Python libraries
+import os
 import copy
 import numpy as np
+import pickle
+
+# ---------------------------- Variable definitions ---------------------------
 
 ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
-data_to_collect = ['ttH125_part1-1', 
+ROOT = "U:\\Backups\\2020_12_19__1_Work\\1_Work\\3_University\\Teaching_Block_9\\1_MSci_Project\\2020_11\\ml_postproc\\"
+SAVE_FOLDER = 'data_binary_classifier'
+
+data_to_collect = ['ttH125', 
                    'TTTo2L2Nu', 
                    'TTToHadronic', 
                    'TTToSemiLeptonic']
 
-# -------------------------------- Data setup --------------------------------
+binary_classifier = True
+set_diJet_mass_nan_to_zero = True
 
-# Load in data
+# -------------------------------- Load in data -------------------------------
+
 loader = DataLoader(ROOT)
 loader.find_files()
 loader.collect_data(data_to_collect)
 data = DataProcessing(loader)
 
-cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename']
+# ---------------------------- Create save folder -----------------------------
+
+if not os.path.exists(SAVE_FOLDER):
+    os.makedirs(SAVE_FOLDER)
+
+# -------------------------- Remove unwanted columns --------------------------
+
+cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename', 'BiasedDPhi']
 cols_to_ignore2 = ['cleanJetMask']
 
 cols_events = data.get_event_columns(cols_to_ignore1)
 cols_jets = data.get_jet_columns(cols_to_ignore2)
 
-data.set_nan_to_zero('DiJet_mass')
-# data.remove_nan('DiJet_mass')
+# Clean DiJet_mass values
+if set_diJet_mass_nan_to_zero:
+    data.set_nan_to_zero('DiJet_mass')
+else:
+    data.remove_nan('DiJet_mass')
 
-sample_weight = WeightMaker.weight_nominal_sample_weights(data)
-data.data['weight_nominal'] = sample_weight
+# ------------------------------ Label_encoding -------------------------------
 
-signal_list = ['ttH125']
-data.label_signal_noise(signal_list)
-#event_labels = LabelMaker.onehot_encoding(data.return_dataset_labels())
-event_labels = LabelMaker.label_encoding(data.return_dataset_labels())
-data.set_dataset_labels(event_labels)
-
+if binary_classifier:
+    signal_list = ['ttH125']
+    data.label_signal_noise(signal_list)
+    event_labels, encoding_dict = LabelMaker.label_encoding(data.return_dataset_labels())
+    data.set_dataset_labels(event_labels, onehot=False)
+else:
+    event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
+    data.set_dataset_labels(event_labels, onehot=True)
+    
 # class_weight = WeightMaker.event_class_weights(data)
 sample_weight = WeightMaker.weight_nominal_sample_weights(data)
 
@@ -70,8 +93,12 @@ df_event_data = event_data.data
 
 # -------------------------------- Data saving --------------------------------
 
-np.save('preprocessed_event_data', event_data.data)
-np.save('preprocessed_event_labels', event_labels)
-np.save('preprocessed_sample_weights', sample_weight)
+DIR = SAVE_FOLDER + '\\'
 
-df_jet_data.to_hdf('preprocessed_jet_data.hdf', key='dfj', mode='w')
+pickle.dump(encoding_dict, open(DIR+'encoding_dict.pickle', 'wb' ))
+
+np.save(DIR+'preprocessed_event_data', event_data.data)
+np.save(DIR+'preprocessed_sample_weights', sample_weight)
+
+event_labels.to_hdf(DIR+'preprocessed_event_labels.hdf', key='df', mode='w')
+df_jet_data.to_hdf(DIR+'preprocessed_jet_data.hdf', key='dfj', mode='w')
