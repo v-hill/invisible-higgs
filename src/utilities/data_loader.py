@@ -37,10 +37,12 @@ class DataLoader():
             list of folder names to collect data from
             e.g. ['ggF125', 'VBF125', 'ZH125']
         """
+        
+        print('collecting data files:')
         for filename in self.filepaths:
             for t in data_to_collect:
                 if t in filename:
                     df = pd.read_hdf(filename)
                     self.data.append(df)
                     if verbose:
-                        print(f"{filename.split('ml_postproc')[-1]:42}: {df.shape}")
+                        print(f"    {filename.split('ml_postproc')[-1]:42}: {df.shape}")
