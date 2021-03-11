@@ -21,7 +21,7 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 
 # -----------------------------------------------------------------------------  
 
-def base(layer1, layer2, input_shape=12):
+def base(layer1, layer2, input_shape=11):
     """
     This functoin creates a dense/fully connected neuarl network with 2 hidden
     layers.
@@ -50,7 +50,7 @@ def base(layer1, layer2, input_shape=12):
               metrics=['accuracy'])
     return model
 
-def base2(layer1, layer2, input_shape=12):
+def base2(layer1, layer2, input_shape=11, learning_rate=0.01):
     """
     This functoin creates a dense/fully connected neuarl network with 2 hidden
     layers.
@@ -79,13 +79,13 @@ def base2(layer1, layer2, input_shape=12):
                            kernel_initializer='random_normal'))
     
     # Compile model
-    opt = keras.optimizers.Adam(learning_rate=0.002)
+    opt = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=opt,
               loss='binary_crossentropy',
               metrics=['accuracy'])
     return model
 
-def base3(layer1, layer2, input_shape=12):
+def base3(layer1, layer2, input_shape=11):
     """
     This functoin creates a dense/fully connected neuarl network with 2 hidden
     layers.
@@ -119,7 +119,7 @@ def base3(layer1, layer2, input_shape=12):
               metrics=['accuracy'])
     return model
 
-def base_with_dropout(layer1, layer2, input_shape=12):
+def base_with_dropout(layer1, layer2, input_shape=11):
     """
     Functionally identical to base model, but with the addition of two 
     dropout layers after each hidden layer.
