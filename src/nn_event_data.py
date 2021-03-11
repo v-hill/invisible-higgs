@@ -3,12 +3,16 @@ This file contains the run code for a simple feedforward neural network to
 classify different event types.
 """
 
+# ---------------------------------- Imports ----------------------------------
+
 # Code from other files in the repo
 import models.sequential_models as sequential_models
 import utilities.plotlib as plotlib
 
 # Python libraries
+import pickle
 import numpy as np
+import pandas as pd
 import time
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
@@ -21,9 +25,16 @@ data_to_collect = ['ttH125_part1-1',
 
 # -------------------------------- Data setup --------------------------------
 
-event_data = np.load('preprocessed_event_data.npy', allow_pickle=True)
-event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
-sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
+SAVE_FOLDER = 'data_binary_classifier'
+DIR = SAVE_FOLDER + '\\'
+
+event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
+sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
+
+encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
+
+event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
+event_labels = event_labels.values
 
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
@@ -41,7 +52,7 @@ sw_test = sw_test[:sample_num]
 
 # ------------------------------ Model training -------------------------------
 
-model = sequential_models.base2(64, 8)
+model = sequential_models.base2(64, 8, input_shape=11, learning_rate=0.002)
 
 print("Fitting sequential model on event training data...")
 START = time.time()
@@ -94,8 +105,8 @@ labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
 labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
 
 # plt.hist(labels_pred, bins, alpha=0.5, label='all events')
-plt.hist(labels_pred_signal, bins, alpha=0.5, label='background', color='brown')
-plt.hist(labels_pred_background, bins, alpha=0.5, label='signal', color='teal')
+plt.hist(labels_pred_signal, bins, alpha=0.5, label='signal', color='brown')
+plt.hist(labels_pred_background, bins, alpha=0.5, label='background', color='teal')
 
 plt.legend(loc='upper right')
 plt.show()
