@@ -36,8 +36,8 @@ class DataProcessing():
             e.g. ['ttH125']
         """
         label_dict = {}
-        signal_label = 'inv_signal'
-        noise_label = 'noise'
+        signal_label = 'signal'
+        noise_label = 'background'
         
         for df in self.data_list:
             dataset = df.iloc[0]['dataset']
@@ -53,9 +53,17 @@ class DataProcessing():
         labels = self.data['dataset'].copy(deep=False)
         return labels.values.astype(str)
     
-    def set_dataset_labels(self, event_labels):
-        self.data['dataset'] = event_labels
-        
+    def set_dataset_labels(self, event_labels, onehot):
+        if onehot:
+            for i in reversed(range(event_labels.shape[1])):
+                values = event_labels.iloc[:,i].values
+                col_name = event_labels.columns[i]
+                self.data.insert(loc=1, column=col_name, value=values)
+        else:
+            values = event_labels.iloc[:,0].values
+            col_name = event_labels.columns[0]
+            self.data.insert(loc=1, column=col_name, value=values)
+            
     #--------------------------------------------------------------------------
     
     def get_event_columns(self, columns_to_ignore, verbose=True):
@@ -197,9 +205,8 @@ class LabelMaker():
 
         Returns
         -------
-        labels : np.ndarray
+        df_labels : pandas.DataFrame
             Array with encoed labels corrosponding to event type (signal/noise)
-
         """
         encoder = preprocessing.LabelEncoder()
         labels = encoder.fit_transform(label_data)
@@ -207,8 +214,11 @@ class LabelMaker():
         if verbose:
             keys = encoder.classes_
             values = encoder.transform(keys)
-            print(f"label encoding: {dict(zip(keys, values))}")
-        return labels
+            encoding_dict = dict(zip(keys.tolist(), values.tolist()))
+            print(f"label encoding: {encoding_dict}")
+            
+        df_labels = pd.DataFrame(data=labels, columns=['label encoding'])
+        return df_labels, encoding_dict
     
     def onehot_encoding(data_list, verbose=True):
         """
@@ -314,7 +324,7 @@ class WeightMaker():
             weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
             # normalisation = total_weight_nominal/weight_selection.sum()
             normalisation = 1/weight_selection.sum()
-            print(f"    1/{weight_selection.sum():0.3f} = {normalisation}")
+            print(f"    {label} total weight_nominal: {weight_selection.sum()}")
             weight_selection *= normalisation
             
             weight_nominals_list.append(weight_selection)
@@ -444,6 +454,7 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
         Dataframe containg the normalised jet data.
 
     '''
+    print('normalising the jet data')
     start = time.time()
     df = data_train.copy(deep=True)
     if columns == None:
@@ -451,7 +462,7 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
     else:
         pass
     
-    for col in columns:
+    for i, col in enumerate(columns):
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
         data_to_fit = np.concatenate(df[col].values).reshape(-1,1)
         mm_scaler.fit(data_to_fit)
@@ -459,8 +470,8 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
         df[col] = df[col].apply(mm_scaler.transform)
         df[col] = df[col].apply(lambda x:x.reshape(-1))
         
-        print(f"    {time.time()-start}")
-    print(f"End {time.time()-start}")
+        print(f"    col {i}/6:    {time.time()-start:0.2f}")
+    print(f"    Elapsed time: {time.time()-start}")
     return df
 
 #------------------------Test and build new functions-------------------------
