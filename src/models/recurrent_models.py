@@ -48,3 +48,19 @@ def base(input_shape=[None, 6]):
               loss='binary_crossentropy',
               metrics=['accuracy'])
     return model
+
+def base_custom_learn(input_shape=[None, 6]):
+    # Define an RNN with a single LSTM layer
+    model = keras.Sequential([
+        keras.layers.InputLayer(input_shape=input_shape, ragged=True),
+        keras.layers.LSTM(64),
+        keras.layers.Dense(8, activation='relu'),
+        keras.layers.Dense(1, activation='sigmoid')
+    ])
+    
+    # Compile model
+    opt = keras.optimizers.Adam(learning_rate=0.00003)
+    model.compile(optimizer=opt,
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+    return model

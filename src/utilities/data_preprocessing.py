@@ -203,6 +203,7 @@ class LabelMaker():
         """
         encoder = preprocessing.LabelEncoder()
         labels = encoder.fit_transform(label_data)
+        
         if verbose:
             keys = encoder.classes_
             values = encoder.transform(keys)
@@ -281,8 +282,9 @@ class WeightMaker():
         
         for label in unique_labels:
             weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
-            normalisation = total_weight_nominal/weight_selection.sum()
-            print(f"    {total_weight_nominal}/{weight_selection.sum()} = {normalisation:0.3f}")
+            # normalisation = total_weight_nominal/weight_selection.sum()
+            normalisation = 1/weight_selection.sum()
+            print(f"    1/{weight_selection.sum():0.3f} = {normalisation}")
             weight_selection *= normalisation
             
             weight_nominals_list.append(weight_selection)

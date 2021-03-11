@@ -20,9 +20,6 @@ data_to_collect = ['ttH125_part1-1',
                    'TTToHadronic', 
                    'TTToSemiLeptonic']
 
-data_to_collect = ['ttH125_part1-1', 
-                   'TTTo2L2Nu']
-
 # -------------------------------- Data setup --------------------------------
 
 # Load in data
@@ -39,6 +36,9 @@ cols_jets = data.get_jet_columns(cols_to_ignore2)
 
 data.set_nan_to_zero('DiJet_mass')
 # data.remove_nan('DiJet_mass')
+
+sample_weight = WeightMaker.weight_nominal_sample_weights(data)
+data.data['weight_nominal'] = sample_weight
 
 signal_list = ['ttH125']
 data.label_signal_noise(signal_list)
