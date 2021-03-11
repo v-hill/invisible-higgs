@@ -29,7 +29,7 @@ loader.find_files()
 loader.collect_data(data_to_collect)
 data = DataProcessing(loader)
 
-sample_weight = WeightMaker.weight_nominal_sample_weights(data)
+data.data.weight_nominal = WeightMaker.weight_nominal_sample_weights(data)
 
 cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename']
 cols_to_ignore2 = ['cleanJetMask']
@@ -37,65 +37,53 @@ cols_to_ignore2 = ['cleanJetMask']
 cols_events = data.get_event_columns(cols_to_ignore1)
 cols_jets = data.get_jet_columns(cols_to_ignore2)
 
-data.set_nan_to_zero('DiJet_mass')
+signal_list = ['ttH125']
+data.label_signal_noise(signal_list)
 
-labels = data.data['dataset']
+data.data.weight_nominal = WeightMaker.weight_nominal_sample_weights(data)
 
-data.filter_data(cols_events)
+signal_df = data.data[data.data.dataset == 'inv_signal']
+background_df = data.data[data.data.dataset != 'inv_signal']
 
-cols_to_log = ['HT', 'MHT_pt', 'MetNoLep_pt']
-data.nat_log_columns(cols_to_log)
+sample_weight_signal = signal_df.weight_nominal.values
+sample_weight_background = background_df.weight_nominal.values
 
-min_max_scale_range = (0, 1)
-data.normalise_columns(min_max_scale_range, return_df=True)
-
-data.data['dataset'] = labels
-data.data['sample_weight'] = sample_weight
-
-total_len = len(data.data.dataset)
-
-signal_df = data.data[data.data.dataset == 'ttH125']
-background_df = data.data[data.data.dataset != 'ttH125']
-
-sample_weight_signal = signal_df.sample_weight.values
-sample_weight_background = background_df.sample_weight.values
-
-sample_weight_signal *= total_len / len(sample_weight_signal)
-sample_weight_background *= total_len / len(sample_weight_background)
+# sample_weight_signal *= total_len / len(sample_weight_signal)
+# sample_weight_background *= total_len / len(sample_weight_background)
 
 '''This produces the weighted hist plots if you only care about the ratio of the
 signal to background'''
-for col in cols_events:
+# for col in cols_events:
     
-    fig,axes = plt.subplots(nrows=2, ncols=2)
-    ax1,ax2,ax3,ax4 = axes.flatten()
+#     fig,axes = plt.subplots(nrows=2, ncols=2)
+#     ax1,ax2,ax3,ax4 = axes.flatten()
     
-    ax1.hist(signal_df[col], bins=100, alpha=0.5, label='Signal')
-    ax1.hist(background_df[col], bins=100, alpha=0.5, label='Background')
-    ax1.set_ylabel('Count')
-    ax1.set_xlabel(col)
-    ax1.legend()
+#     ax1.hist(signal_df[col], bins=100, alpha=0.5, label='Signal')
+#     ax1.hist(background_df[col], bins=100, alpha=0.5, label='Background')
+#     ax1.set_ylabel('Count')
+#     ax1.set_xlabel(col)
+#     ax1.legend()
     
-    ax2.hist(signal_df[col], bins=100, weights=sample_weight_signal, 
-              alpha=0.5, label='Signal')
-    ax2.hist(background_df[col], bins=100, weights=sample_weight_background, 
-              alpha=0.5, label='Background')
-    ax2.set_ylabel('Normalised Count')
-    ax2.set_xlabel(col)
-    ax2.legend()
+#     ax2.hist(signal_df[col], bins=100, weights=sample_weight_signal, 
+#               alpha=0.5, label='Signal')
+#     ax2.hist(background_df[col], bins=100, weights=sample_weight_background, 
+#               alpha=0.5, label='Background')
+#     ax2.set_ylabel('Normalised Count')
+#     ax2.set_xlabel(col)
+#     ax2.legend()
     
-    ax3.hist([signal_df[col],background_df[col]], bins=100, stacked=True,
-              label=['Signal','Background'])
-    ax3.set_ylabel('Count')
-    ax3.set_xlabel(col)
-    ax3.legend()
+#     ax3.hist([signal_df[col],background_df[col]], bins=100, stacked=True,
+#               label=['Signal','Background'])
+#     ax3.set_ylabel('Count')
+#     ax3.set_xlabel(col)
+#     ax3.legend()
     
-    ax4.hist([signal_df[col],background_df[col]], bins=100, 
-              weights=[sample_weight_signal,sample_weight_background],
-              stacked=True,label=['Signal','Background'])
-    ax4.set_ylabel('Normalised Count')
-    ax4.set_xlabel(col)
-    ax4.legend()
+#     ax4.hist([signal_df[col],background_df[col]], bins=100, 
+#               weights=[sample_weight_signal,sample_weight_background],
+#               stacked=True,label=['Signal','Background'])
+#     ax4.set_ylabel('Normalised Count')
+#     ax4.set_xlabel(col)
+#     ax4.legend()
     
 '''This produces the weighted hist plots if you want the different production
 events distinguished'''
