@@ -18,21 +18,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
-data_to_collect = ['ttH125_part1-1', 
-                   'TTTo2L2Nu', 
-                   'TTToHadronic', 
-                   'TTToSemiLeptonic']
-
 # -------------------------------- Data setup --------------------------------
 
 SAVE_FOLDER = 'data_binary_classifier'
 DIR = SAVE_FOLDER + '\\'
 
+# Load files
 event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
 sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
-
 encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
-
 event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
 event_labels = event_labels.values
 
