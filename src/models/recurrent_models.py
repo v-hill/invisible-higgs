@@ -2,6 +2,8 @@
 This file contains functions for generating recurrent neural network models.
 """
 
+# ---------------------------------- Imports ----------------------------------
+
 USE_GPU = False
 
 import tensorflow as tf
@@ -49,7 +51,7 @@ def base(input_shape=[None, 6]):
               metrics=['accuracy'])
     return model
 
-def base_custom_learn(input_shape=[None, 6]):
+def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
         keras.layers.InputLayer(input_shape=input_shape, ragged=True),
@@ -59,7 +61,7 @@ def base_custom_learn(input_shape=[None, 6]):
     ])
     
     # Compile model
-    opt = keras.optimizers.Adam(learning_rate=0.00003)
+    opt = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=opt,
               loss='binary_crossentropy',
               metrics=['accuracy'])
