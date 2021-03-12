@@ -20,16 +20,15 @@ import pickle
 
 # ---------------------------- Variable definitions ---------------------------
 
-ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
-ROOT = "U:\\Backups\\2020_12_19__1_Work\\1_Work\\3_University\\Teaching_Block_9\\1_MSci_Project\\2020_11\\ml_postproc\\"
-SAVE_FOLDER = 'data_binary_classifier'
+ROOT = "C:\\users\\user\\Documents\\Fifth Year\\ml_postproc\\"
+SAVE_FOLDER = 'data_multi_classifier'
 
 data_to_collect = ['ttH125', 
                    'TTTo2L2Nu', 
                    'TTToHadronic', 
                    'TTToSemiLeptonic']
 
-binary_classifier = True
+binary_classifier = False
 set_diJet_mass_nan_to_zero = True
 
 # -------------------------------- Load in data -------------------------------
@@ -44,7 +43,7 @@ data = DataProcessing(loader)
 if not os.path.exists(SAVE_FOLDER):
     os.makedirs(SAVE_FOLDER)
 
-# -------------------------- Remove unwanted columns --------------------------
+# --------------------------- Remove unwanted data ----------------------------
 
 cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename', 'BiasedDPhi']
 cols_to_ignore2 = ['cleanJetMask']
@@ -58,16 +57,17 @@ if set_diJet_mass_nan_to_zero:
 else:
     data.remove_nan('DiJet_mass')
 
+# Removes all events with less than two jets
+data.data = data.data[data.data.ncleanedJet > 1]
+
 # ------------------------------ Label_encoding -------------------------------
 
 if binary_classifier:
     signal_list = ['ttH125']
     data.label_signal_noise(signal_list)
     event_labels, encoding_dict = LabelMaker.label_encoding(data.return_dataset_labels())
-    data.set_dataset_labels(event_labels, onehot=False)
 else:
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
-    data.set_dataset_labels(event_labels, onehot=True)
     
 # class_weight = WeightMaker.event_class_weights(data)
 sample_weight = WeightMaker.weight_nominal_sample_weights(data)
