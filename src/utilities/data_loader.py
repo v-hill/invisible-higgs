@@ -25,7 +25,7 @@ class DataLoader():
         
         if len(self.filepaths)==0:
             raise Exception("No files found in specified root folder")
-                    
+
     def collect_data(self, data_to_collect, verbose=True):
         """
         Funcion to create a a list of pandas dataframes. Each dataframe contains
@@ -37,7 +37,6 @@ class DataLoader():
             list of folder names to collect data from
             e.g. ['ggF125', 'VBF125', 'ZH125']
         """
-        
         print('collecting data files:')
         for filename in self.filepaths:
             for t in data_to_collect:
