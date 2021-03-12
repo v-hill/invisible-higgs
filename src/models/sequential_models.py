@@ -23,7 +23,7 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 
 def base(layer1, layer2, input_shape=11):
     """
-    This functoin creates a dense/fully connected neuarl network with 2 hidden
+    This function creates a dense/fully connected neuarl network with 2 hidden
     layers.
     Parameters
     ----------
@@ -52,8 +52,8 @@ def base(layer1, layer2, input_shape=11):
 
 def base2(layer1, layer2, input_shape=11, learning_rate=0.01):
     """
-    This functoin creates a dense/fully connected neuarl network with 2 hidden
-    layers.
+    base + custom learning rate for the Adam optimiser
+         + 'binary_crossentropy' loss function
 
     Parameters
     ----------
@@ -87,8 +87,7 @@ def base2(layer1, layer2, input_shape=11, learning_rate=0.01):
 
 def base3(layer1, layer2, input_shape=11):
     """
-    This functoin creates a dense/fully connected neuarl network with 2 hidden
-    layers.
+    base2 with standard learning rate
 
     Parameters
     ----------
@@ -119,9 +118,9 @@ def base3(layer1, layer2, input_shape=11):
               metrics=['accuracy'])
     return model
 
-def base_with_dropout(layer1, layer2, input_shape=11):
+def base_with_dropout(layer1, layer2, input_shape=11, dropout=0.2):
     """
-    Functionally identical to base model, but with the addition of two 
+    Functionally identical to base3 model, but with the addition of two 
     dropout layers after each hidden layer.
     Returns
     -------
@@ -130,11 +129,14 @@ def base_with_dropout(layer1, layer2, input_shape=11):
     # Define Sequential model with 2 hidden layers
     model = keras.Sequential()
     model.add(keras.Input(shape=(input_shape,)))
-    model.add(layers.Dense(layer1, activation="relu"))
-    model.add(layers.Dropout(0.2))
-    model.add(layers.Dense(layer2, activation="relu"))
-    model.add(layers.Dropout(0.2))
-    model.add(layers.Dense(1))
+    model.add(layers.Dense(layer1, activation='relu', 
+                           kernel_initializer='random_normal'))
+    model.add(layers.Dropout(dropout))
+    model.add(layers.Dense(layer2, activation='relu', 
+                           kernel_initializer='random_normal'))
+    model.add(layers.Dropout(dropout))
+    model.add(layers.Dense(1, activation='sigmoid', 
+                           kernel_initializer='random_normal'))
     
     # Compile model
     model.compile(optimizer='adam',
