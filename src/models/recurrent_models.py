@@ -66,3 +66,45 @@ def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
               loss='binary_crossentropy',
               metrics=['accuracy'])
     return model
+
+def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
+    """
+    This function creates a neural network for multilabel classification.
+
+    Parameters
+    ----------
+    layer1 : int
+        Number of neurons in layer 1 the LSTM layer.
+    layer2 : int
+        Number of neurons in layer 2 .
+    input_shape : int, optional
+        The input shape of the data. The default is [None, 6].
+
+    Returns
+    -------
+    model : keras.Sequential
+
+    """
+        # Define an RNN with a single LSTM layer
+    model = keras.Sequential([
+        keras.layers.InputLayer(input_shape=input_shape, ragged=True),
+        keras.layers.LSTM(layer1),
+        keras.layers.Dense(layer2, activation='relu'),
+        keras.layers.Dense(output_shape, activation='softmax')
+    ])
+    
+    # Compile model
+    model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])    
+    return model
+
+
+
+
+
+
+
+
+
+
