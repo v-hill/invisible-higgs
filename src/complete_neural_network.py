@@ -4,27 +4,35 @@ feedforward neural network (for the events data) and the recurrent neural
 network (for the jet data).
 """
 
+# ---------------------------------- Imports ----------------------------------
+
 # Tell tensorflow to ignore GPU device and run on CPU
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 # Code from other files in the repo
 from utilities.data_preprocessing import make_ragged_tensor
-from utilities.data_preprocessing import normalise_jet_columns
+import models.combined_models as combined_models
 import utilities.plotlib as plotlib
 
 # Python libraries
+import pickle
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
-from tensorflow import keras
-from tensorflow.keras import layers
+import matplotlib.pyplot as plt
 
 #------------------------------- Load event data ------------------------------
 
-event_data = np.load('preprocessed_event_data.npy', allow_pickle=True)
-event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
-sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
+SAVE_FOLDER = 'data_binary_classifier'
+DIR = SAVE_FOLDER + '\\'
+
+# Load files
+event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
+sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
+encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
+event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
+event_labels = event_labels.values
 
 # Generate a fixed random state
 random_state = np.random.randint(50)
@@ -44,8 +52,8 @@ data_test1 = data_test1[:sample_num]
 
 #-------------------------------- Load jet data -------------------------------
 
-# Load in data
-df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
+# Load files
+df_jet_data = pd.read_hdf(DIR+'preprocessed_jet_data.hdf')
 
 data_train2, data_test2, labels_train, labels_test, sw_train, sw_test  = \
             train_test_split(df_jet_data,
@@ -62,40 +70,13 @@ labels_test = labels_test[:sample_num]
 sw_train = sw_train[:sample_num]
 sw_test = sw_test[:sample_num]
 
-#normalise the training set
-# data_train2 = normalise_jet_columns(data_train2)
-# data_test2 = normalise_jet_columns(data_test2)
-
 jet_data_train_rt = make_ragged_tensor(data_train2)
 jet_data_test_rt = make_ragged_tensor(data_test2)
 
-#------------------------- Create combined neural net -------------------------
+# ------------------------------ Model training -------------------------------
 
-# define two seperate inputs
-inputA = keras.Input(shape=12)
-inputB = keras.Input(shape=[None, 6], ragged=True)
-
-# create the sequential event nn
-x = layers.Dense(42, activation="relu")(inputA)
-x = layers.Dense(4, activation="relu")(x)
-x = keras.Model(inputs=inputA, outputs=x)
-
-# the second branch opreates on the second input
-y = keras.layers.LSTM(64)(inputB)
-y = keras.layers.Dense(4, activation="relu")(y)
-y = keras.Model(inputs=inputB, outputs=y)
-
-# combine the output of the two branches
-combined = layers.Concatenate()([x.output, y.output])
-
-# apply a FC layer and then a regression prediction on the
-# combined outputs
-z = layers.Dense(2, activation="relu")(combined)
-z = layers.Dense(1, activation='sigmoid')(z)
-
-model = keras.Model(inputs=[x.input, y.input], outputs=z)
-
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+model = combined_models.base1(input_shape1=11, 
+                              input_shape2=[None, 6])
 
 history = model.fit(x=[data_train1, jet_data_train_rt], y=labels_train, 
                     validation_data=([data_test1, jet_data_test_rt], labels_test), 
@@ -106,10 +87,11 @@ history = model.fit(x=[data_train1, jet_data_train_rt], y=labels_train,
 test_loss, test_acc = model.evaluate([data_test1, jet_data_test_rt], labels_test, verbose=2)
 print(f"    Test accuracy: {test_acc:0.5f}")
 
-#%%
+# --------------------------------- Plotting ----------------------------------
 
 # Plot training history
 fig1 = plotlib.training_history_plot(history, 'Event neural network model accuracy')
+
 
 # Get model predictions
 labels_pred = model.predict([data_test1, jet_data_test_rt])
@@ -127,6 +109,26 @@ title = 'Confusion matrix'
 # Plot confusion matrix
 fig2 = plotlib.confusion_matrix(cm, class_names, title)
 
+
 # Plot ROC curve
 title_roc = 'ROC curve for event data model'
 fig = plotlib.plot_roc(labels_pred, labels_test, title_roc)
+
+
+# Plot distribution of discriminator values
+bins = np.linspace(0, 1, 50)
+fig = plt.figure(figsize=(6, 4), dpi=200)
+
+plt.title("Distribution of discriminator values for the RNN")
+plt.xlabel("Label prediction")
+plt.ylabel("Density")
+
+labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
+labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
+
+# plt.hist(labels_pred, bins, alpha=0.5, label='all events')
+plt.hist(labels_pred_signal, bins, alpha=0.5, label='signal', color='brown')
+plt.hist(labels_pred_background, bins, alpha=0.5, label='background', color='teal')
+
+plt.legend(loc='upper right')
+plt.show()
