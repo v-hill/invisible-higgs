@@ -20,7 +20,7 @@ import pickle
 
 # ---------------------------- Variable definitions ---------------------------
 
-ROOT = "C:\\users\\user\\Documents\\Fifth Year\\ml_postproc\\"
+ROOT = "C:\\<Data directory>\\ml_postproc\\"
 SAVE_FOLDER = 'data_multi_classifier'
 
 data_to_collect = ['ttH125', 
