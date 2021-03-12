@@ -1,6 +1,8 @@
 """
-This file contains the code for preparing the jet data for an RNN neural network.
+This file contains the training on the RNN model on the jet data.
 """
+
+# ---------------------------------- Imports ----------------------------------
 
 # Code from other files in the repo
 import models.recurrent_models as recurrent_models
@@ -8,6 +10,7 @@ from utilities.data_preprocessing import make_ragged_tensor
 import utilities.plotlib as plotlib
 
 # Python libraries
+import pickle
 import pandas as pd
 import numpy as np
 import time
@@ -17,15 +20,20 @@ import matplotlib.pyplot as plt
 
 # -------------------------------- Data setup --------------------------------
 
-# Load in data
-df_jet_data = pd.read_hdf('preprocessed_jet_data.hdf')
-event_labels = np.load('preprocessed_event_labels.npy', allow_pickle=True)
-sample_weight = np.load('preprocessed_sample_weights.npy', allow_pickle=True)
+SAVE_FOLDER = 'data_binary_classifier'
+DIR = SAVE_FOLDER + '\\'
+
+# Load files
+df_jet_data = pd.read_hdf(DIR+'preprocessed_jet_data.hdf')
+sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
+encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
+event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
+event_labels = event_labels.values
 
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test_rnn, sw_train, sw_test  = \
     train_test_split(df_jet_data, event_labels, 
-                     sample_weight, test_size=test_fraction)
+                      sample_weight, test_size=test_fraction)
 
 # Take a sample of the data to speed up training
 sample_num = 10000
@@ -84,14 +92,19 @@ fig3 = plotlib.plot_roc(labels_pred, labels_test_rnn, title_roc)
 
 
 # Plot distribution of discriminator values
-bins = np.linspace(0, 1, 64)
+bins = np.linspace(0, 1, 50)
 fig = plt.figure(figsize=(6, 4), dpi=200)
 
 plt.title("Distribution of discriminator values for the RNN")
 plt.xlabel("Label prediction")
 plt.ylabel("Density")
-# plt.xlim(0, 10)
 
-plt.hist(labels_pred, bins, alpha=0.5, label='RNN', density=True)
+labels_pred_signal = labels_pred[np.array(labels_test_rnn, dtype=bool)]
+labels_pred_background = labels_pred[np.invert(np.array(labels_test_rnn, dtype=bool))]
+
+# plt.hist(labels_pred, bins, alpha=0.5, label='all events')
+plt.hist(labels_pred_signal, bins, alpha=0.5, label='signal', color='brown')
+plt.hist(labels_pred_background, bins, alpha=0.5, label='background', color='teal')
+
 plt.legend(loc='upper right')
 plt.show()
