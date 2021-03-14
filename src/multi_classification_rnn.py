@@ -71,6 +71,13 @@ fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy')
 
 # Get model predictions
 labels_pred = model.predict(data_test_rt)
+
+# Plot ROC curves
+title = 'ROC curve for multi label classification event data'
+class_labels = list(encoding_dict.keys())
+fig2 = plotlib.plot_multi_class_roc(labels_pred, labels_test_rnn, title, class_labels)
+
+# Transform data into binary
 labels_pred = np.argmax(labels_pred, axis=1)
 labels_test = np.argmax(labels_test_rnn, axis=1)
 
@@ -80,7 +87,7 @@ class_names = list(encoding_dict.keys())
 title = 'Confusion matrix'
 
 # Plot confusion matrix
-fig2 = plotlib.confusion_matrix(cm, class_names, title)
+fig3 = plotlib.confusion_matrix(cm, class_names, title)
 
 
 

@@ -191,12 +191,12 @@ def plot_multi_class_roc(pred, y, title, class_labels):
         
     # Plot micro/macro-average ROC        
     ax.plot(fpr["micro"], tpr["micro"],
-         label='micro-average ROC curve (area = {0:0.2f})'
+         label='micro-average | area = {0:0.2f}'
                ''.format(roc_auc["micro"]),
                linestyle=':',linewidth=2)
     
     ax.plot(fpr["macro"], tpr["macro"],
-         label='macro-average ROC curve (area = {0:0.2f})'
+         label='macro-average | area = {0:0.2f}'
                ''.format(roc_auc["macro"]),
                linestyle=':',linewidth=2)
     
