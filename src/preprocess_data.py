@@ -20,16 +20,20 @@ import pickle
 
 # ---------------------------- Variable definitions ---------------------------
 
+binary_classifier = False
+set_diJet_mass_nan_to_zero = True
+
 ROOT = "C:\\<Data directory>\\ml_postproc\\"
-SAVE_FOLDER = 'data_multi_classifier'
 
 data_to_collect = ['ttH125', 
                    'TTTo2L2Nu', 
                    'TTToHadronic', 
                    'TTToSemiLeptonic']
 
-binary_classifier = False
-set_diJet_mass_nan_to_zero = True
+if binary_classifier:
+    SAVE_FOLDER = 'data_multi_classifier'
+else:
+    SAVE_FOLDER = 'data_binary_classifier'
 
 # -------------------------------- Load in data -------------------------------
 
