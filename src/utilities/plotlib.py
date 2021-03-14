@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 from textwrap import wrap
+from scipy import interp
 from sklearn.metrics import roc_curve, auc
 
 # ---------------------------- Plotting functions -----------------------------
@@ -126,3 +127,94 @@ def plot_roc(pred, y, title, figsize=(6, 4), dpi=300):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     return fig
+
+def plot_multi_class_roc(pred, y, title, class_labels):
+    """
+    Plots roc curves for multi label classification by transforming each label
+    into a binary classifier problem.
+
+    Parameters
+    ----------
+    pred : np.ndarray
+        Array of predicted values.
+    y : np.ndarray
+        Array of target values.
+    title : str
+        ROC curve title.
+    class_label : list
+        List containg class label names as strings.
+
+    Returns
+    -------
+    fig : TYPE
+        DESCRIPTION.
+
+    """
+    # Creates storage locations
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    n_classes = len(class_labels)
+    
+    # Calculate binary ROC curves for each class
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y[:, i], pred[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+    
+    # Compute micro-average ROC curve and ROC area
+    fpr['micro'], tpr['micro'], _ = roc_curve(y.ravel(), pred.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    
+    # Compute macro-average ROC curve and ROC area
+    # Aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+    
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(n_classes):
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        
+    # Average mean_tpr
+    mean_tpr /= n_classes
+    
+    #Compute AUC    
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+    
+    fig,ax = plt.subplots()
+    ax.plot([0, 1], [0, 1], 'k--')
+    
+    for i in range(n_classes):
+        label = '{0} | auc = {1:.2f}'.format(class_labels[i],roc_auc[i])
+        ax.plot(fpr[i], tpr[i], label = label)
+        
+    # Plot micro/macro-average ROC        
+    ax.plot(fpr["micro"], tpr["micro"],
+         label='micro-average ROC curve (area = {0:0.2f})'
+               ''.format(roc_auc["micro"]),
+               linestyle=':',linewidth=2)
+    
+    ax.plot(fpr["macro"], tpr["macro"],
+         label='macro-average ROC curve (area = {0:0.2f})'
+               ''.format(roc_auc["macro"]),
+               linestyle=':',linewidth=2)
+    
+    ax.set_xlim([0.0, 1.0])
+    ax.set_ylim([0.0, 1.05])
+    ax.set_title(title)
+    ax.legend(loc="lower right")
+    ax.set_xlabel('False Positive Rate')
+    ax.set_ylabel('True Positive Rate')
+    return fig
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    

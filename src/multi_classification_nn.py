@@ -29,6 +29,7 @@ sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True
 encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
 event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
 event_labels = event_labels.values
+n_classes = event_labels.shape[1]
 
 test_fraction = 0.2
 data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
@@ -46,7 +47,8 @@ sw_test = sw_test[:sample_num]
 
 # ------------------------------ Model training -------------------------------
 
-model = sequential_models.multi_class_base(64, 8, input_shape=11)
+model = sequential_models.multi_class_base(64, 8, input_shape=11, 
+                                           output_shape = n_classes)
 
 print("Fitting sequential model on event training data...")
 START = time.time()
@@ -63,9 +65,15 @@ print(f"    Test accuracy: {test_acc:0.5f}")
 # Plot training history
 fig1 = plotlib.training_history_plot(history, 'Event neural network model accuracy')
 
-
 # Get model predictions
 labels_pred = model.predict(data_test)
+
+#Plot ROC curves
+title = 'ROC curve for multi label classification event data'
+class_labels = list(encoding_dict.keys())
+fig2 = plotlib.plot_multi_class_roc(labels_pred,labels_test, title, class_labels)
+
+#Transform data into binary
 labels_pred = np.argmax(labels_pred, axis=1)
 labels_test = np.argmax(labels_test, axis=1)
 
@@ -75,7 +83,24 @@ class_names = list(encoding_dict.keys())
 title = 'Confusion matrix'
 
 # Plot confusion matrix
-fig2 = plotlib.confusion_matrix(cm, class_names, title)
+fig3 = plotlib.confusion_matrix(cm, class_names, title)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
