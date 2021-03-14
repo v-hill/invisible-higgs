@@ -31,9 +31,9 @@ data_to_collect = ['ttH125',
                    'TTToSemiLeptonic']
 
 if binary_classifier:
-    SAVE_FOLDER = 'data_multi_classifier'
-else:
     SAVE_FOLDER = 'data_binary_classifier'
+else:
+    SAVE_FOLDER = 'data_multi_classifier'
 
 # -------------------------------- Load in data -------------------------------
 
