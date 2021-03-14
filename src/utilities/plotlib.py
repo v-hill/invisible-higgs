@@ -128,7 +128,7 @@ def plot_roc(pred, y, title, figsize=(6, 4), dpi=300):
     plt.ylabel('True Positive Rate')
     return fig
 
-def plot_multi_class_roc(pred, y, title, class_labels):
+def plot_multi_class_roc(pred, y, title, class_labels, figsize=(6, 4), dpi=300):
     """
     Plots roc curves for multi label classification by transforming each label
     into a binary classifier problem.
@@ -182,7 +182,7 @@ def plot_multi_class_roc(pred, y, title, class_labels):
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
     
-    fig,ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     ax.plot([0, 1], [0, 1], 'k--')
     
     for i in range(n_classes):
@@ -207,14 +207,3 @@ def plot_multi_class_roc(pred, y, title, class_labels):
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
     return fig
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    
