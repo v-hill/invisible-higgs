@@ -19,9 +19,9 @@ This repository is currently structured as follows.
         │   ├── nn_events_hyperparameter_tuning.ipynb
         │   └── nn_multifeature_tuning.py
         ├── utilities   
-        │   ├── data_loader.py
-        │   ├── data_preprocessing.py
-        │   └── plotlib.py
+            ├── data_loader.py
+            ├── data_preprocessing.py
+            └── plotlib.py
         ├── complete_neural_network.py
         ├── hist_plt.py
         ├── multi_classification_complete_network.py
