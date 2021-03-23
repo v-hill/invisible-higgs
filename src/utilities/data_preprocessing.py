@@ -122,15 +122,22 @@ class DataProcessing():
                         print(f"    {col:<32}: {self.data[col].dtypes}")
         return columns_filtered
     
-    def filter_data(self, column_filter):
+    def filter_data(self, column_filter, ignore=[]):
         """
         Remove all columns from the self.data dataframe except those in the
-        list column_filter.
+        list column_filter and the optional ignore list.
 
         Parameters
         ----------
         column_filter : list
             list of columns in the new self.data
+
+        ignore : list, optional
+            List of optional extra columns to keep. The default is [].
+
+        Returns
+        -------
+        None.
         """
         self.data = self.data[column_filter]
         
@@ -479,7 +486,7 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
     print(f"    Elapsed time: {time.time()-start}")
     return df
 
-#------------------------Test and build new functions-------------------------
+#------------------------ Test and build new functions-------------------------
 '''Anything written in here will not be run when a module is called'''
 
 if __name__ == "__main__":
