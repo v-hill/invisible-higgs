@@ -20,22 +20,31 @@ import pickle
 
 # ---------------------------- Variable definitions ---------------------------
 
-binary_classifier = False
+ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
+SAVE_FOLDER = 'data_binary_classifier'
+
+dataset_types = ['binary_classifier', 
+                 'multi_classifier', 
+                 'multisignal_classifier']
+
+dataset_type = dataset_types[0] # using binary classifier by default
 set_diJet_mass_nan_to_zero = True
 
-ROOT = "C:\\<Data directory>\\ml_postproc\\"
-
-data_to_collect = ['ttH125', 
-                   'TTTo2L2Nu', 
-                   'TTToHadronic', 
-                   'TTToSemiLeptonic']
-
-if binary_classifier:
-    SAVE_FOLDER = 'data_binary_classifier'
-else:
-    SAVE_FOLDER = 'data_multi_classifier'
-
 # -------------------------------- Load in data -------------------------------
+
+if dataset_type=='binary_classifier' or dataset_type=='multi_classifier':
+    data_to_collect = ['ttH125', 
+                       'TTTo2L2Nu', 
+                       'TTToHadronic', 
+                       'TTToSemiLeptonic']
+else:
+    data_to_collect = ['ttH125', 
+                       'TTTo2L2Nu', 
+                       'TTToHadronic', 
+                       'TTToSemiLeptonic',
+                       'WminusH125',
+                       'WplusH125',
+                       'WJetsToLNu']
 
 loader = DataLoader(ROOT)
 loader.find_files()
@@ -66,13 +75,29 @@ data.data = data.data[data.data.ncleanedJet > 1]
 
 # ------------------------------ Label_encoding -------------------------------
 
-if binary_classifier:
+if dataset_type=='binary_classifier':
     signal_list = ['ttH125']
     data.label_signal_noise(signal_list)
     event_labels, encoding_dict = LabelMaker.label_encoding(data.return_dataset_labels())
-else:
+    data.set_dataset_labels(event_labels, onehot=False)
+elif dataset_type=='multi_classifier':
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
-    
+    data.set_dataset_labels(event_labels, onehot=True)
+else:
+    data_dict = {'ttH125' : 'sig1',
+                 'TTTo2L2Nu' : 'back1',
+                 'TTToHadronic' : 'back1',
+                 'TTToSemiLeptonic' : 'back1',
+                 'WminusH125' : 'sig2',
+                 'WplusH125' : 'sig2'}
+    all_datset_vals = data.data['dataset'].unique()
+    for dataset in all_datset_vals:
+        if 'WJetsToLNu' in dataset:
+            data_dict[dataset] = 'back2'
+    data.label_signal_noise_multi(data_dict)
+    event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
+    data.set_dataset_labels(event_labels, onehot=True)
+
 # class_weight = WeightMaker.event_class_weights(data)
 sample_weight = WeightMaker.weight_nominal_sample_weights(data)
 
