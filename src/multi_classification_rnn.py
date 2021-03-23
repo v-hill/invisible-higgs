@@ -73,7 +73,7 @@ fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy')
 labels_pred = model.predict(data_test_rt)
 
 # Plot ROC curves
-title = 'ROC curve for multi label classification event data'
+title = 'ROC curve for multi label classification jet data'
 class_labels = list(encoding_dict.keys())
 fig2 = plotlib.plot_multi_class_roc(labels_pred, labels_test_rnn, title, class_labels)
 
