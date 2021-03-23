@@ -75,13 +75,29 @@ data.data = data.data[data.data.ncleanedJet > 1]
 
 # ------------------------------ Label_encoding -------------------------------
 
-if binary_classifier:
+if dataset_type=='binary_classifier':
     signal_list = ['ttH125']
     data.label_signal_noise(signal_list)
     event_labels, encoding_dict = LabelMaker.label_encoding(data.return_dataset_labels())
-else:
+    data.set_dataset_labels(event_labels, onehot=False)
+elif dataset_type=='multi_classifier':
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
-    
+    data.set_dataset_labels(event_labels, onehot=True)
+else:
+    data_dict = {'ttH125' : 'sig1',
+                 'TTTo2L2Nu' : 'back1',
+                 'TTToHadronic' : 'back1',
+                 'TTToSemiLeptonic' : 'back1',
+                 'WminusH125' : 'sig2',
+                 'WplusH125' : 'sig2'}
+    all_datset_vals = data.data['dataset'].unique()
+    for dataset in all_datset_vals:
+        if 'WJetsToLNu' in dataset:
+            data_dict[dataset] = 'back2'
+    data.label_signal_noise_multi(data_dict)
+    event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
+    data.set_dataset_labels(event_labels, onehot=True)
+
 # class_weight = WeightMaker.event_class_weights(data)
 sample_weight = WeightMaker.weight_nominal_sample_weights(data)
 
