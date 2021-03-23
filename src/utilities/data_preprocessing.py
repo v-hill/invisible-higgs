@@ -49,6 +49,11 @@ class DataProcessing():
         labels = labels.replace(label_dict)
         self.data['dataset'] = labels
         
+    def label_signal_noise_multi(self, data_dict):
+        labels = self.data['dataset']
+        labels = labels.replace(data_dict)
+        self.data['dataset'] = labels
+        
     def return_dataset_labels(self):
         labels = self.data['dataset'].copy(deep=False)
         return labels.values.astype(str)
