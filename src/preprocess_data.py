@@ -20,22 +20,31 @@ import pickle
 
 # ---------------------------- Variable definitions ---------------------------
 
-binary_classifier = False
+ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
+SAVE_FOLDER = 'data_binary_classifier'
+
+dataset_types = ['binary_classifier', 
+                 'multi_classifier', 
+                 'multisignal_classifier']
+
+dataset_type = dataset_types[0] # using binary classifier by default
 set_diJet_mass_nan_to_zero = True
 
-ROOT = "C:\\<Data directory>\\ml_postproc\\"
-
-data_to_collect = ['ttH125', 
-                   'TTTo2L2Nu', 
-                   'TTToHadronic', 
-                   'TTToSemiLeptonic']
-
-if binary_classifier:
-    SAVE_FOLDER = 'data_binary_classifier'
-else:
-    SAVE_FOLDER = 'data_multi_classifier'
-
 # -------------------------------- Load in data -------------------------------
+
+if dataset_type=='binary_classifier' or dataset_type=='multi_classifier':
+    data_to_collect = ['ttH125', 
+                       'TTTo2L2Nu', 
+                       'TTToHadronic', 
+                       'TTToSemiLeptonic']
+else:
+    data_to_collect = ['ttH125', 
+                       'TTTo2L2Nu', 
+                       'TTToHadronic', 
+                       'TTToSemiLeptonic',
+                       'WminusH125',
+                       'WplusH125',
+                       'WJetsToLNu']
 
 loader = DataLoader(ROOT)
 loader.find_files()
