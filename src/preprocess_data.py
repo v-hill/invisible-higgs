@@ -27,7 +27,7 @@ dataset_types = ['binary_classifier',
                  'multisignal_classifier']
 
 dataset_type = dataset_types[0] # using binary classifier by default
-SAVE_FOLDER = dataset_type
+SAVE_FOLDER = 'data_' + dataset_type
 set_diJet_mass_nan_to_zero = True
 
 # -------------------------------- Load in data -------------------------------
