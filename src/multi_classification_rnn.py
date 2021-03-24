@@ -18,10 +18,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
-# -------------------------------- Data setup --------------------------------
+# ---------------------------- Variable definitions --------------------------
 
-SAVE_FOLDER = 'data_multi_classifier'
+# Possibel dataset_type
+#['multi_classifier', 'multisignal_classifier']
+
+dataset_type = 'multisignal_classifier'
+
+if dataset_type == 'multi_classifier':    
+    SAVE_FOLDER = 'data_multi_classifier'
+else:
+    SAVE_FOLDER = 'data_multisignal_classifier'
+
 DIR = SAVE_FOLDER + '\\'
+
+# -------------------------------- Data load ---------------------------------
 
 # Load files
 df_jet_data = pd.read_hdf(DIR+'preprocessed_jet_data.hdf')
@@ -36,7 +47,7 @@ data_train, data_test, labels_train, labels_test_rnn, sw_train, sw_test  = \
                       sample_weight, test_size=test_fraction)
 
 # Take a sample of the data to speed up training
-sample_num = -1
+sample_num = 5000
 data_train = data_train[:sample_num]
 data_test = data_test[:sample_num]
 labels_train = labels_train[:sample_num]
@@ -67,7 +78,8 @@ print(f"    Test accuracy: {test_acc:0.5f}")
 # --------------------------------- Plotting ----------------------------------
 
 # Plot training history
-fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy')
+fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy', dpi=200)
+fig1.savefig('\\Users\\user\\Documents\\Fifth Year\\invisible-higgs\\Images\\recurrent_model\\multi_signal_rnn_accuracy.png')
 
 # Get model predictions
 labels_pred = model.predict(data_test_rt)
@@ -75,8 +87,13 @@ labels_pred = model.predict(data_test_rt)
 # Plot ROC curves
 title = 'ROC curve for multi label classification jet data'
 class_labels = list(encoding_dict.keys())
-fig2 = plotlib.plot_multi_class_roc(labels_pred, labels_test_rnn, title, class_labels)
 
+if dataset_type == 'multi_classifier':    
+    fig2 = plotlib.plot_multi_class_roc(labels_pred, labels_test_rnn, title, class_labels)
+else:
+    fig2 = plotlib.plot_multi_signal_roc(labels_pred, labels_test_rnn, title, class_labels)
+
+fig2.savefig('\\Users\\user\\Documents\\Fifth Year\\invisible-higgs\\Images\\recurrent_model\\multi_signal_rnn_roc_curve.png')
 # Transform data into binary
 labels_pred = np.argmax(labels_pred, axis=1)
 labels_test = np.argmax(labels_test_rnn, axis=1)
@@ -87,7 +104,8 @@ class_names = list(encoding_dict.keys())
 title = 'Confusion matrix'
 
 # Plot confusion matrix
-fig3 = plotlib.confusion_matrix(cm, class_names, title)
+fig3 = plotlib.confusion_matrix(cm, class_names, title, dpi=200)
+fig3.savefig('\\Users\\user\\Documents\\Fifth Year\\invisible-higgs\\Images\\recurrent_model\\multi_signal_rnn_confusion_matrix.png')
 
 
 

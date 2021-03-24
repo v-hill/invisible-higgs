@@ -22,10 +22,21 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
-#------------------------------- Load event data ------------------------------
+# ---------------------------- Variable definitions --------------------------
 
-SAVE_FOLDER = 'data_multi_classifier'
+# Possibel dataset_type
+#['multi_classifier', 'multisignal_classifier']
+
+dataset_type = 'multisignal_classifier'
+
+if dataset_type == 'multi_classifier':    
+    SAVE_FOLDER = 'data_multi_classifier'
+else:
+    SAVE_FOLDER = 'data_multisignal_classifier'
+
 DIR = SAVE_FOLDER + '\\'
+
+#------------------------------- Load event data ------------------------------
 
 # Load files
 event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
@@ -46,7 +57,7 @@ data_train1, data_test1, labels_train, labels_test, sw_train, sw_test  = \
                              random_state=random_state)
             
 # Take a sample of the data to speed up training
-sample_num = -1
+sample_num = 50000
 data_train1 = data_train1[:sample_num]
 data_test1 = data_test1[:sample_num]
 
@@ -99,7 +110,11 @@ labels_pred = model.predict([data_test1, jet_data_test_rt])
 # Plot ROC curves
 title = 'ROC curve for multi label classification complete network'
 class_labels = list(encoding_dict.keys())
-fig2 = plotlib.plot_multi_class_roc(labels_pred,labels_test, title, class_labels)
+
+if dataset_type == 'multi_classifier':    
+    fig2 = plotlib.plot_multi_class_roc(labels_pred, labels_test, title, class_labels)
+else:
+    fig2 = plotlib.plot_multi_signal_roc(labels_pred, labels_test, title, class_labels)
 
 # Transform data into binary
 labels_pred = np.argmax(labels_pred, axis=1)
