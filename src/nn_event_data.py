@@ -26,6 +26,8 @@ DIR = SAVE_FOLDER + '\\'
 # Load files
 event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
 sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
+weight_nominal = np.load(DIR+'weight_nominal.npy', allow_pickle=True)
+xs_weight = np.load(DIR+'xs_weight.npy', allow_pickle=True)
 encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
 event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
 event_labels = event_labels.values
@@ -46,13 +48,14 @@ sw_test = sw_test[:sample_num]
 
 # ------------------------------ Model training -------------------------------
 
-model = sequential_models.base2(64, 8, input_shape=11, learning_rate=0.002)
+INPUT_SHAPE = event_data.shape[1]
+model = sequential_models.base2(64, 8, input_shape=INPUT_SHAPE, learning_rate=0.001)
 
 print("Fitting sequential model on event training data...")
 START = time.time()
-history = model.fit(data_train, labels_train, batch_size = 64,
+history = model.fit(data_train, labels_train, batch_size = 128,
                     validation_data=(data_test, labels_test), 
-                    sample_weight=sw_train, epochs=32, verbose=2)
+                    sample_weight=sw_train, epochs=24, verbose=2)
 print(f"    Elapsed training time: {time.time()-START:0.2f}s")
 
 test_loss, test_acc = model.evaluate(data_test, labels_test, verbose=2)
