@@ -315,38 +315,41 @@ class WeightMaker():
         print(f"class weights: {class_weight_dict}")
         return class_weight_dict
         
-    def weight_nominal_sample_weights(data):
+    def weight_nominal_sample_weights(data, weight_col='weight_nominal'):
         """
-        This function uses the 'weight_nominal' parameter to create an event
-        by event sample_weight. The sample weights are normalised based on the
-        sum of the 'weight_nominal' for each classification label.
+        This function uses the 'weight_nominal' or 'xs_weight' parameter to 
+        create an event by event sample_weight. The sample weights are 
+        normalised based on the sum of the 'weight_nominal' for each 
+        classification label.
 
         Parameters
         ----------
         data : DataProcessing
+        weight_col : str, optional
+            Weight to make sample weights from. Either 'weight_nominal' or 
+            'xs_weight'. The default is 'weight_nominal'.
 
         Returns
         -------
         new_weights : np.ndarray
             Array containing the sample weights to be fed into the model.fit()
         """
-        weight_nominal_vals = data.data['weight_nominal']
-        total_weight_nominal = weight_nominal_vals.sum()
-        print(f"total weight_nominal: {total_weight_nominal:0.5f}")
+        weight_vals = data.data[weight_col]
+        total_weight_val = weight_vals.sum()
+        print(f"total {weight_col}: {total_weight_val:0.5f}")
         
         unique_labels = data.data['dataset'].unique()
-        weight_nominals_list = []
+        weight_list = []
         
         for label in unique_labels:
-            weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
-            # normalisation = total_weight_nominal/weight_selection.sum()
+            weight_selection = data.data.loc[data.data['dataset'] == label][weight_col]
+            # normalisation = total_weight_val/weight_selection.sum()
             normalisation = 1/weight_selection.sum()
-            print(f"    {label} total weight_nominal: {weight_selection.sum():0.5f}")
+            print(f"    {label} total {weight_col}: {weight_selection.sum():0.5f}")
             weight_selection *= normalisation
+            weight_list.append(weight_selection)
             
-            weight_nominals_list.append(weight_selection)
-            
-        new_weights = pd.concat(weight_nominals_list, axis=0, ignore_index=True)
+        new_weights = pd.concat(weight_list, axis=0, ignore_index=True)
         return new_weights.values
 
 # ---------------------------- Making RaggedTensor ----------------------------
