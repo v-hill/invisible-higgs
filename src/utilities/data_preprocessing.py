@@ -112,6 +112,7 @@ class DataProcessing():
         columns_filtered : list
             list of columns to use for training
         """
+        print("columns to be used for jet data neural network:")
         columns_filtered = []
         
         for col in self.all_columns:
@@ -163,6 +164,10 @@ class DataProcessing():
             list of column names
         """
         for col in columns:
+            if col not in self.data.columns:
+                print(f"{col} column not present in dataset")
+                continue
+                
             try:
                 self.data[col] = np.log(self.data[col])
             except:
@@ -327,7 +332,7 @@ class WeightMaker():
         """
         weight_nominal_vals = data.data['weight_nominal']
         total_weight_nominal = weight_nominal_vals.sum()
-        print(f"total weight_nominal: {total_weight_nominal}")
+        print(f"total weight_nominal: {total_weight_nominal:0.5f}")
         
         unique_labels = data.data['dataset'].unique()
         weight_nominals_list = []
@@ -336,7 +341,7 @@ class WeightMaker():
             weight_selection = data.data.loc[data.data['dataset'] == label]['weight_nominal']
             # normalisation = total_weight_nominal/weight_selection.sum()
             normalisation = 1/weight_selection.sum()
-            print(f"    {label} total weight_nominal: {weight_selection.sum()}")
+            print(f"    {label} total weight_nominal: {weight_selection.sum():0.5f}")
             weight_selection *= normalisation
             
             weight_nominals_list.append(weight_selection)
