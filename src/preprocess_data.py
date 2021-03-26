@@ -22,12 +22,16 @@ import pickle
 
 ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
 
+dataset = 1 # Use 0 for old dataset, 1 for new dataset
+
 dataset_types = ['binary_classifier', 
                  'multi_classifier', 
                  'multisignal_classifier']
-
 dataset_type = dataset_types[0] # using binary classifier by default
+
 SAVE_FOLDER = 'data_' + dataset_type
+DIR = SAVE_FOLDER + '\\'
+
 set_diJet_mass_nan_to_zero = True
 
 # -------------------------------- Load in data -------------------------------
@@ -58,7 +62,11 @@ if not os.path.exists(SAVE_FOLDER):
 
 # --------------------------- Remove unwanted data ----------------------------
 
-cols_to_ignore1 = ['entry', 'weight_nominal', 'hashed_filename', 'BiasedDPhi']
+cols_to_ignore1 = ['entry', 'weight_nominal', 
+                   'xs_weight', 'hashed_filename', 
+                   'BiasedDPhi', 'InputMet_InputJet_mindPhi', 
+                   'InputMet_phi', 'InputMet_pt', 
+                   'MHT_phi']
 cols_to_ignore2 = ['cleanJetMask']
 
 cols_events = data.get_event_columns(cols_to_ignore1)
@@ -72,6 +80,14 @@ else:
 
 # Removes all events with less than two jets
 data.data = data.data[data.data.ncleanedJet > 1]
+
+# ------------------------------ Weights saving -------------------------------
+
+weight_nominal = data.data['weight_nominal']
+np.save(DIR+'weight_nominal', weight_nominal)
+if dataset==1:
+    xs_weight = data.data['xs_weight']
+    np.save(DIR+'xs_weight', xs_weight)
 
 # ------------------------------ Label_encoding -------------------------------
 
@@ -101,6 +117,8 @@ else:
 # class_weight = WeightMaker.event_class_weights(data)
 sample_weight = WeightMaker.weight_nominal_sample_weights(data)
 
+# ------------------------------ Normalise data -------------------------------
+
 # Make seperate copies of the dataset
 event_data = copy.deepcopy(data)
 jet_data = copy.deepcopy(data)
@@ -122,12 +140,11 @@ df_event_data = event_data.data
 
 # -------------------------------- Data saving --------------------------------
 
-DIR = SAVE_FOLDER + '\\'
-
 pickle.dump(encoding_dict, open(DIR+'encoding_dict.pickle', 'wb' ))
 
 np.save(DIR+'preprocessed_event_data', event_data.data)
 np.save(DIR+'preprocessed_sample_weights', sample_weight)
+np.save(DIR+'weight_nominal', weight_nominal)
 
 event_labels.to_hdf(DIR+'preprocessed_event_labels.hdf', key='df', mode='w')
 df_jet_data.to_hdf(DIR+'preprocessed_jet_data.hdf', key='dfj', mode='w')
