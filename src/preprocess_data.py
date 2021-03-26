@@ -33,6 +33,7 @@ SAVE_FOLDER = 'data_' + dataset_type
 DIR = SAVE_FOLDER + '\\'
 
 set_diJet_mass_nan_to_zero = True
+weight_col = 'xs_weight' # Choice of 'weight_nominal' or 'xs_weight'
 
 # -------------------------------- Load in data -------------------------------
 
@@ -81,14 +82,6 @@ else:
 # Removes all events with less than two jets
 data.data = data.data[data.data.ncleanedJet > 1]
 
-# ------------------------------ Weights saving -------------------------------
-
-weight_nominal = data.data['weight_nominal']
-np.save(DIR+'weight_nominal', weight_nominal)
-if dataset==1:
-    xs_weight = data.data['xs_weight']
-    np.save(DIR+'xs_weight', xs_weight)
-
 # ------------------------------ Label_encoding -------------------------------
 
 if dataset_type=='binary_classifier':
@@ -114,8 +107,15 @@ else:
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
     data.set_dataset_labels(event_labels, onehot=True)
 
-# class_weight = WeightMaker.event_class_weights(data)
-sample_weight = WeightMaker.weight_nominal_sample_weights(data)
+# -------------------------------- Data weights -------------------------------
+
+weight_nominal = data.data['weight_nominal']
+np.save(DIR+'weight_nominal', weight_nominal)
+if dataset==1:
+    xs_weight = data.data['xs_weight']
+    np.save(DIR+'xs_weight', xs_weight)
+    
+sample_weight = WeightMaker.weight_nominal_sample_weights(data, weight_col=weight_col)
 
 # ------------------------------ Normalise data -------------------------------
 
