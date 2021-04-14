@@ -102,39 +102,39 @@ labels_pred = model.predict(event_data)
 xs_weight = xs_weight.reshape((-1, 1))
 
 thresholds = np.linspace(0, 1, 50)
-bin_centres_sig = []
-bin_vals_sig = []
-bin_centres_back = []
-bin_vals_back = []
 
 dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'])
 dataset['xs_weight'] = xs_weight*140000
 dataset['event_labels'] = event_labels
 
-for i in range(len(thresholds)-1):
-    df_selection = dataset[dataset['labels_pred'].between(thresholds[i], 1)]
-    df_sig = df_selection[df_selection['event_labels']==1]
-    df_back = df_selection[df_selection['event_labels']==0]
-    sum_xs_weight_sig = df_sig['xs_weight'].sum()
-    sum_xs_weight_back = df_back['xs_weight'].sum()
+def calc_significance():
+    bin_centres_sig = []
+    bin_vals_sig = []
+    bin_centres_back = []
+    bin_vals_back = []
+    z_vals = []
+    z_vals2 = []
+    for i in range(len(thresholds)-1):
+        df_selection = dataset[dataset['labels_pred'].between(thresholds[i], 1)]
+        df_sig = df_selection[df_selection['event_labels']==1]
+        df_back = df_selection[df_selection['event_labels']==0]
+        sum_xs_weight_sig = df_sig['xs_weight'].sum()
+        sum_xs_weight_back = df_back['xs_weight'].sum()
+        
+        bin_centres_sig.append(thresholds[i])
+        bin_vals_sig.append(sum_xs_weight_sig)
+        bin_centres_back.append(thresholds[i])
+        bin_vals_back.append(sum_xs_weight_back)
     
-    # print(f'{thresholds[i]:0.2f}, {thresholds[i+1]:0.2f}, {len(df_selection)}, {sum_xs_weight:0.2f}')
-    
-    bin_centres_sig.append(thresholds[i])
-    bin_vals_sig.append(sum_xs_weight_sig)
-    bin_centres_back.append(thresholds[i])
-    bin_vals_back.append(sum_xs_weight_back)
+        s = sum_xs_weight_sig
+        b = sum_xs_weight_back
+        
+        z = sqrt(2*((s+b)*np.log(1+(s/b))-s)) # Calculate significance 
+        z_vals.append(z)
+        z_vals2.append(s/(sqrt(b)))
+    return bin_centres_sig, z_vals, z_vals2
 
-z_vals = []
-z_vals2 = []
-print('threshold, signal, background, s/sqrt(b)')
-for i in range(len(bin_vals_sig)):
-    s = bin_vals_sig[i]
-    b = bin_vals_back[i]
-    
-    z = sqrt(2*((s+b)*np.log(1+(s/b))-s)) # Calculate significance 
-    z_vals.append(z)
-    z_vals2.append(s/(sqrt(b)))
+bin_centres_sig, z_vals, z_vals2 = calc_significance()
 
 z_vals = np.asarray(z_vals)
 
@@ -146,3 +146,4 @@ plt.ylabel("ZA")
 plt.plot(bin_centres_sig, z_vals, 'o-', label='z1')
 plt.plot(bin_centres_sig, z_vals2, 'o-', label='z2')
 plt.legend(loc='upper right')
+
