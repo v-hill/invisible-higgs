@@ -13,7 +13,7 @@ from sklearn.metrics import roc_curve, auc
 
 # ---------------------------- Plotting functions -----------------------------
 
-def training_history_plot(history, title, figsize=(6, 4), dpi=300, full_y=False):
+def training_history_plot(history, title, figsize=(6, 4), dpi=200, full_y=False):
     """
     Plots the training history of the neural network.
 
@@ -26,7 +26,7 @@ def training_history_plot(history, title, figsize=(6, 4), dpi=300, full_y=False)
     figsize : tuple, optional
         Size of the matplotlib figure. The default is (6, 4).
     dpi : int, optional
-        The default is 300.
+        The default is 200.
     full_y : bool, optional
         Set to true in order to set the y-axis limits to (0, 1). 
         The default is False, giving automatic scaling.
@@ -48,7 +48,7 @@ def training_history_plot(history, title, figsize=(6, 4), dpi=300, full_y=False)
     plt.legend(['train', 'test'], loc='upper left')
     return fig
 
-def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=300, colourbar=False):
+def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=200, colourbar=False):
     """
     Plots the confusion matrix.
 
@@ -61,9 +61,9 @@ def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=300, colourbar=
     title : str
         Plot title
     figsize : tuple, optional
-        Size of the matplotlib figure. The default is (4, 4).
+        Size of the matplotlib figure. The default is (6, 4).
     dpi : int, optional
-        The default is 300.
+        The default is 200.
     colourbar : bool, optional
         Option to add colourbar to plot. The default is False.
 
@@ -93,21 +93,20 @@ def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=300, colourbar=
     plt.xlabel('Predicted label')
     return fig
 
-def plot_roc(pred, y, title, figsize=(6, 4), dpi=300):
+def plot_roc(pred, y, title, figsize=(6, 4), dpi=200):
     """
     Plots the ROC curve of a keras model.
     
-
     Parameters
     ----------
-    pred : TYPE
-        DESCRIPTION.
-    y : TYPE
-        DESCRIPTION.
-    figsize : TYPE, optional
-        DESCRIPTION. The default is (4, 4).
-    dpi : TYPE, optional
-        DESCRIPTION. The default is 300.
+    pred : numpy.ndarray
+        Predicted labels
+    y : numpy.ndarray
+        True labels
+    figsize : tuple, optional
+        DESCRIPTION. The default is (6, 4).
+    dpi : int, optional
+        DESCRIPTION. The default is 200.
 
     Returns
     -------
@@ -132,22 +131,19 @@ def plot_multi_class_roc(pred, y, title, class_labels, figsize=(6, 4), dpi=200):
     """
     Plots roc curves for multi label classification by transforming each label
     into a binary classifier problem.
-
     Parameters
     ----------
-    pred : np.ndarray
+    pred : numpy.ndarray
         Array of predicted values.
-    y : np.ndarray
+    y : numpy.ndarray
         Array of target values.
     title : str
         ROC curve title.
     class_label : list
         List containg class label names as strings.
-
     Returns
     -------
-    fig : TYPE
-
+    fig : matplotlib.figure.Figure
     """
     # Creates storage locations
     fpr = dict()
@@ -211,22 +207,19 @@ def plot_multi_signal_roc(pred, y, title, class_labels, figsize=(6, 4), dpi=200)
     """
     Plots roc curves for multi label classification by transforming each label
     into a binary classifier problem.
-
     Parameters
     ----------
-    pred : np.ndarray
+    pred : numpy.ndarray
         Array of predicted values.
-    y : np.ndarray
+    y : numpy.ndarray
         Array of target values.
     title : str
         ROC curve title.
     class_label : list
         List containg class label names as strings.
-
     Returns
     -------
-    fig : TYPE
-
+    fig : matplotlib.figure.Figure
     """
     # Creates storage locations
     fpr = dict()
@@ -295,10 +288,40 @@ def plot_multi_signal_roc(pred, y, title, class_labels, figsize=(6, 4), dpi=200)
     ax.set_xlabel('False Positive Rate')
     ax.set_ylabel('True Positive Rate')
     return fig
+
+def plot_discriminator_vals(pred_signal, pred_background, title, figsize=(6, 4), dpi=200):
+    """
+    Plots the distribution of discriminator values for a keras model.
+
+    Parameters
+    ----------
+    pred_signal : numpy.ndarray
+        Array of discriminator values for known signal data
+    pred_background : numpy.ndarray
+        Array of discriminator values for known background data
+    title : str
+        Plot title
+    figsize : tuple, optional
+        DESCRIPTION. The default is (6, 4).
+    dpi : int, optional
+        DESCRIPTION. The default is 200.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     
+    bins = np.linspace(0, 1, 50)
+
+    fig = plt.figure(figsize=figsize, dpi=dpi)
+    plt.title(title)
+    plt.xlabel("Label prediction")
+    plt.ylabel("Number of events")
+    # plt.xlim(0, 10)
     
+    plt.hist(pred_signal, bins, alpha=0.5, label='signal', color='brown')
+    plt.hist(pred_background, bins, alpha=0.5, label='background', color='teal')
     
-    
-    
-    
+    plt.legend(loc='upper right')
+    return fig
     
