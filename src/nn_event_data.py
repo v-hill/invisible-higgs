@@ -91,35 +91,31 @@ labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool)
 title = "Distribution of discriminator values for the event-nn"
 fig4 = plotlib.plot_discriminator_vals(labels_pred_signal, labels_pred_background, title)
 
-#%%
-
-"""
-Raw code for significance plot.
-"""
-
 # Get model predictions
 labels_pred = model.predict(event_data)
 xs_weight = xs_weight.reshape((-1, 1))
 
-thresholds = np.linspace(0, 1, 50)
-
-dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'])
-dataset['xs_weight'] = xs_weight*140000
-dataset['event_labels'] = event_labels
-
-def calc_significance():
+def calc_significance(num_thresholds, dataset):
     bin_centres_sig = []
     bin_vals_sig = []
     bin_centres_back = []
     bin_vals_back = []
+    
     z_vals = []
     z_vals2 = []
+    thresholds = np.linspace(0, 1, num_thresholds)
+    
     for i in range(len(thresholds)-1):
+        
         df_selection = dataset[dataset['labels_pred'].between(thresholds[i], 1)]
+
         df_sig = df_selection[df_selection['event_labels']==1]
         df_back = df_selection[df_selection['event_labels']==0]
         sum_xs_weight_sig = df_sig['xs_weight'].sum()
         sum_xs_weight_back = df_back['xs_weight'].sum()
+        
+        if sum_xs_weight_sig==0 or sum_xs_weight_back==0:
+            continue
         
         bin_centres_sig.append(thresholds[i])
         bin_vals_sig.append(sum_xs_weight_sig)
@@ -132,18 +128,24 @@ def calc_significance():
         z = sqrt(2*((s+b)*np.log(1+(s/b))-s)) # Calculate significance 
         z_vals.append(z)
         z_vals2.append(s/(sqrt(b)))
-    return bin_centres_sig, z_vals, z_vals2
+    return bin_centres_sig, np.asarray(z_vals), np.asarray(z_vals2)
 
-bin_centres_sig, z_vals, z_vals2 = calc_significance()
 
-z_vals = np.asarray(z_vals)
+# Make dataset
+dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'])
+dataset['xs_weight'] = xs_weight*140000
+dataset['event_labels'] = event_labels
+
+bin_centres_sig, z_vals, z_vals2 = calc_significance(200, dataset)
+print(f'Max significance at discriminator value of {bin_centres_sig[z_vals.argmax()]:0.3f}')
+
 
 fig = plt.figure(figsize=(6, 4), dpi=200)
 plt.title("Significance plot for event FFN binary classifier, using xs_weight")
 plt.xlabel("Discrimintor threshold value")
 plt.xlim(-0.1, 1)
+plt.ylim(0, 8)
 plt.ylabel("ZA")
-plt.plot(bin_centres_sig, z_vals, 'o-', label='z1')
-plt.plot(bin_centres_sig, z_vals2, 'o-', label='z2')
-plt.legend(loc='upper right')
-
+plt.plot(bin_centres_sig, z_vals, '-', label='z_A')
+plt.plot(bin_centres_sig, z_vals2, '-', label=' S/sqrt(B)')
+plt.legend(loc='upper left')
