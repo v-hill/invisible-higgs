@@ -319,8 +319,8 @@ def plot_discriminator_vals(pred_signal, pred_background, title, figsize=(6, 4),
     plt.ylabel("Number of events")
     # plt.xlim(0, 10)
     
-    plt.hist(pred_signal, bins, alpha=0.5, label='signal', color='brown')
-    plt.hist(pred_background, bins, alpha=0.5, label='background', color='teal')
+    plt.hist(pred_signal, bins, alpha=0.5, label='ttH (signal)', color='brown')
+    plt.hist(pred_background, bins, alpha=0.5, label='tt¯ (background)', color='teal')
     
     plt.legend(loc='upper right')
     return fig
