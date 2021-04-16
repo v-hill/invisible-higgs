@@ -173,7 +173,7 @@ class DataProcessing():
             except:
                 raise Exception(f"{col} column cannot be logged")
             
-    def normalise_columns(self, span=(0, 1), columns=None, return_df = False):
+    def normalise_columns(self, span=(0, 1), columns=None, return_df=False):
         """
         Use the sklearn MinMaxScaler to scale each columns values to a given 
         range. By deafult all columns are scaled, but a list of specific 
@@ -197,7 +197,7 @@ class DataProcessing():
         else:
             self.data[columns] = mm_scaler.fit_transform(self.data[columns])
         
-        if return_df == True:
+        if return_df==True:
             self.data = pd.DataFrame(self.data)
             self.data.columns = columns
         else:
@@ -455,7 +455,7 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
     return training_data, test_data
 
 def normalise_jet_columns(data_train, span=(0,1), columns=None):
-    '''
+    """
     This function normalises the data in the jet columns
 
     Parameters
@@ -473,7 +473,7 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
     data_train : pandas.DataFrame
         Dataframe containg the normalised jet data.
 
-    '''
+    """
     print('normalising the jet data')
     start = time.time()
     df = data_train.copy(deep=True)
@@ -495,7 +495,9 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
     return df
 
 #------------------------ Test and build new functions-------------------------
-'''Anything written in here will not be run when a module is called'''
+"""
+Anything written in here will not be run when a module is called
+"""
 
 if __name__ == "__main__":
     pass
