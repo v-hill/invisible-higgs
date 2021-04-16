@@ -61,11 +61,11 @@ class DataProcessing():
     def set_dataset_labels(self, event_labels, onehot):
         if onehot:
             for i in reversed(range(event_labels.shape[1])):
-                values = event_labels.iloc[:,i].values
+                values = event_labels.iloc[:, i].values
                 col_name = event_labels.columns[i]
                 self.data.insert(loc=1, column=col_name, value=values)
         else:
-            values = event_labels.iloc[:,0].values
+            values = event_labels.iloc[:, 0].values
             col_name = event_labels.columns[0]
             self.data.insert(loc=1, column=col_name, value=values)
             
@@ -191,13 +191,13 @@ class DataProcessing():
             self.data will be returned as a pandas dataframe
         """
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
-        if columns==None:
+        if columns == None:
             columns = self.data.columns
             self.data = mm_scaler.fit_transform(self.data)
         else:
             self.data[columns] = mm_scaler.fit_transform(self.data[columns])
         
-        if return_df==True:
+        if return_df == True:
             self.data = pd.DataFrame(self.data)
             self.data.columns = columns
         else:
@@ -267,7 +267,7 @@ class LabelMaker():
         # Make column names
         col_names = ['']*np.shape(labels)[1]
         for i, key in enumerate(keys):
-            index = np.argwhere(values[i]==1)[0][0]
+            index = np.argwhere(values[i] == 1)[0][0]
             col_name = 'onehot_' + str(key)
             col_names[index] = col_name
         
@@ -380,7 +380,7 @@ def make_ragged_tensor(input_data):
     row_current = 0
     row_splits = [0]
     rt_list_new = []
-    for idx, event in enumerate(data_list):
+    for event in data_list:
         rt = np.stack(event, axis=0).T.tolist()
         row_current += len(rt)
         rt_list_new += rt
@@ -454,7 +454,7 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
     
     return training_data, test_data
 
-def normalise_jet_columns(data_train, span=(0,1), columns=None):
+def normalise_jet_columns(data_train, span=(0, 1), columns=None):
     """
     This function normalises the data in the jet columns
 
@@ -484,11 +484,11 @@ def normalise_jet_columns(data_train, span=(0,1), columns=None):
     
     for i, col in enumerate(columns):
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
-        data_to_fit = np.concatenate(df[col].values).reshape(-1,1)
+        data_to_fit = np.concatenate(df[col].values).reshape(-1, 1)
         mm_scaler.fit(data_to_fit)
-        df[col] = df[col].apply(lambda x:x.reshape(-1,1))
+        df[col] = df[col].apply(lambda x: x.reshape(-1, 1))
         df[col] = df[col].apply(mm_scaler.transform)
-        df[col] = df[col].apply(lambda x:x.reshape(-1))
+        df[col] = df[col].apply(lambda x: x.reshape(-1))
         
         print(f"    col {i}/6:    {time.time()-start:0.2f}")
     print(f"    Elapsed time: {time.time()-start}")
