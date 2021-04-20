@@ -10,71 +10,88 @@ from utilities.data_loader import  DataLoader
 from utilities.data_preprocessing import DataProcessing
 from utilities.data_preprocessing import LabelMaker
 from utilities.data_preprocessing import WeightMaker
-from utilities.data_preprocessing import normalise_jet_columns
 
 # Python libraries
 import os
 import copy
-import numpy as np
 import pickle
+from datetime import datetime
 
-# ---------------------------- Variable definitions ---------------------------
+# ---------------------------- Function definitions ---------------------------
 
-ROOT = "C:\\{Directory containing data}\\ml_postproc\\"
+def write_args_to_txt(args):
+    """
+    Write the programme setup parameters to a log file.
 
-dataset = 1 # Use 0 for old dataset, 1 for new dataset
+    Parameters
+    ----------
+    args : dict
+        Arguments used during the data preprocessing to generate the 
+        preprocessed data.
+    """
+    output_file = open(args['dir_output']+'data_preprocessing_arguments.txt', 'w')
+    output_file.write('The following paramters were used to generate this '
+                      'dataset: \n')
+    for k, v in args.items():
+      # write line to output file
+      output_file.write(f"   '{k}'\t{v}")
+      output_file.write('\n')
+    output_file.close()
+    
+# ------------------------------ Programme setup ------------------------------
 
-dataset_types = ['binary_classifier', 
-                 'multi_classifier', 
-                 'multisignal_classifier']
-dataset_type = dataset_types[0] # using binary classifier by default
+# Use 'input_dataset'='old' for old dataset, 'input_dataset'='new' for new dataset
+# For 'weight_col', choice of 'weight_nominal' or 'xs_weight'
+args = {'dir_root' : 'C:\\{Directory containing data}\\ml_postproc\\',
+        'input_dataset' : 'new',
+        'output_datasets' : ['binary_classifier', 'multi_classifier', 'multisignal_classifier'],
+        'chosen_output' : 'binary_classifier',
+        'set_diJet_mass_nan_to_zero' : True,
+        'weight_col' : 'xs_weight',
+        'timestamp' : datetime.today().strftime('%Y-%m-%d %H:%M:%S')}
 
-SAVE_FOLDER = 'data_' + dataset_type
-DIR = SAVE_FOLDER + '\\'
+args['save_folder'] = 'data_' + args['chosen_output']
+args['dir_output'] = args['save_folder'] + '\\'
 
-set_diJet_mass_nan_to_zero = True
-weight_col = 'xs_weight' # Choice of 'weight_nominal' or 'xs_weight'
+if args['chosen_output']=='binary_classifier' or args['chosen_output']=='multi_classifier':
+    args['data_to_collect'] = ['ttH125', 
+                               'TTTo2L2Nu', 
+                               'TTToHadronic', 
+                               'TTToSemiLeptonic']
+else:
+    args['data_to_collect'] = ['ttH125',
+                               'TTTo2L2Nu', 
+                               'TTToHadronic', 
+                               'TTToSemiLeptonic',
+                               'WminusH125',
+                               'WplusH125',
+                               'WJetsToLNu']
 
 # -------------------------------- Load in data -------------------------------
 
-if dataset_type=='binary_classifier' or dataset_type=='multi_classifier':
-    data_to_collect = ['ttH125', 
-                       'TTTo2L2Nu', 
-                       'TTToHadronic', 
-                       'TTToSemiLeptonic']
-else:
-    data_to_collect = ['ttH125',
-                       'TTTo2L2Nu', 
-                       'TTToHadronic', 
-                       'TTToSemiLeptonic',
-                       'WminusH125',
-                       'WplusH125',
-                       'WJetsToLNu']
-
-loader = DataLoader(ROOT)
+loader = DataLoader(args['dir_root'])
 loader.find_files()
-loader.collect_data(data_to_collect)
+loader.collect_data(args['data_to_collect'])
 data = DataProcessing(loader)
 
 # ---------------------------- Create save folder -----------------------------
 
-if not os.path.exists(SAVE_FOLDER):
-    os.makedirs(SAVE_FOLDER)
+if not os.path.exists(args['save_folder']):
+    os.makedirs(args['save_folder'])
 
 # --------------------------- Remove unwanted data ----------------------------
 
-cols_to_ignore1 = ['entry', 'weight_nominal', 
-                   'xs_weight', 'hashed_filename', 
-                   'BiasedDPhi', 'InputMet_InputJet_mindPhi', 
-                   'InputMet_phi', 'InputMet_pt', 
-                   'MHT_phi']
-cols_to_ignore2 = ['cleanJetMask']
+args['cols_to_ignore_events'] = ['entry', 'weight_nominal', 
+                                 'xs_weight', 'hashed_filename', 
+                                 'BiasedDPhi', 'InputMet_InputJet_mindPhi', 
+                                 'InputMet_phi', 'InputMet_pt', 'MHT_phi']
+args['cols_to_ignore_jets'] = ['cleanJetMask']
 
-cols_events = data.get_event_columns(cols_to_ignore1)
-cols_jets = data.get_jet_columns(cols_to_ignore2)
+cols_events = data.get_event_columns(args['cols_to_ignore_events'])
+cols_jets = data.get_jet_columns(args['cols_to_ignore_jets'])
 
 # Clean DiJet_mass values
-if set_diJet_mass_nan_to_zero:
+if args['set_diJet_mass_nan_to_zero']:
     data.set_nan_to_zero('DiJet_mass')
 else:
     data.remove_nan('DiJet_mass')
@@ -84,15 +101,22 @@ data.data = data.data[data.data.ncleanedJet > 1]
 
 # ------------------------------ Label_encoding -------------------------------
 
-if dataset_type=='binary_classifier':
+# Store the original dataset labels, before label encoding
+data.data.insert(loc=0, column='raw_dataset', value=data.data['dataset'])
+
+if args['chosen_output']=='binary_classifier':
     signal_list = ['ttH125']
     data.label_signal_noise(signal_list)
     event_labels, encoding_dict = LabelMaker.label_encoding(data.return_dataset_labels())
     data.set_dataset_labels(event_labels, onehot=False)
-elif dataset_type=='multi_classifier':
+    df_labels = data.data[['raw_dataset', 'label_encoding', 'dataset']]
+    
+elif args['chosen_output']=='multi_classifier':
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
     data.set_dataset_labels(event_labels, onehot=True)
-else:
+    df_labels = data.data[['raw_dataset', 'dataset'] + list(event_labels.columns)]
+    
+elif args['chosen_output']=='multisignal_classifier':
     data_dict = {'ttH125' : 'sig1',
                  'TTTo2L2Nu' : 'back1',
                  'TTToHadronic' : 'back1',
@@ -106,45 +130,48 @@ else:
     data.label_signal_noise_multi(data_dict)
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
     data.set_dataset_labels(event_labels, onehot=True)
+    df_labels = data.data[['raw_dataset', 'dataset'] + list(event_labels.columns)]
+    
+else:
+    raise Exception('Invalid choice of chosen_output argument')
 
 # -------------------------------- Data weights -------------------------------
 
-weight_nominal = data.data['weight_nominal']
-np.save(DIR+'weight_nominal', weight_nominal)
-if dataset==1:
-    xs_weight = data.data['xs_weight']
-    np.save(DIR+'xs_weight', xs_weight)
-    
-sample_weight = WeightMaker.weight_nominal_sample_weights(data, weight_col=weight_col)
+sample_weight = WeightMaker.weight_nominal_sample_weights(data, weight_col=args['weight_col'])
+data.data.insert(loc=len(data.data.columns), column='sample_weight', value=sample_weight)
+
+if args['input_dataset'] == 'new':
+    df_weights = data.data[['weight_nominal','xs_weight', 'sample_weight']]
+elif args['input_dataset'] == 'old':
+    df_weights = data.data[['weight_nominal', 'sample_weight']]
 
 # ------------------------------ Normalise data -------------------------------
 
 # Make seperate copies of the dataset
-event_data = copy.deepcopy(data)
-jet_data = copy.deepcopy(data)
+df_event_data = copy.deepcopy(data)
+df_jet_data = copy.deepcopy(data)
+
+# Normalise event data
+cols_to_log = ['HT', 'MHT_pt', 'MetNoLep_pt']
+df_event_data.nat_log_columns(cols_to_log)
+df_event_data.normalise_columns(cols_events, span=(0, 1))
+
+# Normalise jet data
+df_jet_data = df_jet_data.normalise_jet_columns(cols_jets, span=(0, 1))
 
 # Select only the event columns from the data
-event_data.filter_data(cols_events)
-
-# Select only the jet columns from the data
-jet_data.filter_data(cols_jets)
-
-cols_to_log = ['HT', 'MHT_pt', 'MetNoLep_pt']
-event_data.nat_log_columns(cols_to_log)
-
-min_max_scale_range = (0, 1)
-event_data.normalise_columns(min_max_scale_range)
-
-df_jet_data = normalise_jet_columns(jet_data.data)
-df_event_data = event_data.data
+df_event_data.filter_data(cols_events)
+df_event_data = df_event_data.data
 
 # -------------------------------- Data saving --------------------------------
 
-pickle.dump(encoding_dict, open(DIR+'encoding_dict.pickle', 'wb' ))
+print('saving processed data')
+pickle.dump(encoding_dict, open(args['dir_output']+'encoding_dict.pkl', 'wb' ))
+pickle.dump(args, open(args['dir_output']+'data_preprocessing_arguments.pkl', 'wb' ))
+write_args_to_txt(args)
 
-np.save(DIR+'preprocessed_event_data', event_data.data)
-np.save(DIR+'preprocessed_sample_weights', sample_weight)
-np.save(DIR+'weight_nominal', weight_nominal)
-
-event_labels.to_hdf(DIR+'preprocessed_event_labels.hdf', key='df', mode='w')
-df_jet_data.to_hdf(DIR+'preprocessed_jet_data.hdf', key='dfj', mode='w')
+# data.data.to_pickle(args['dir_output']+'df_all_data.pkl')
+df_labels.to_pickle(args['dir_output']+'df_labels.pkl')
+df_weights.to_pickle(args['dir_output']+'df_weights.pkl')
+df_jet_data.to_pickle(args['dir_output']+'preprocessed_jet_data.pkl')
+df_event_data.to_pickle(args['dir_output']+'preprocessed_event_data.pkl')
