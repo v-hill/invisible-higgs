@@ -9,6 +9,7 @@ import numpy as np
 from sklearn import preprocessing
 import tensorflow as tf
 import time
+from itertools import accumulate
 
 class DataProcessing():
     def __init__(self, data):
@@ -165,7 +166,7 @@ class DataProcessing():
         """
         for col in columns:
             if col not in self.data.columns:
-                print(f"{col} column not present in dataset")
+                print(f"column not present in dataset: {col}")
                 continue
                 
             try:
@@ -173,7 +174,7 @@ class DataProcessing():
             except:
                 raise Exception(f"{col} column cannot be logged")
             
-    def normalise_columns(self, span=(0, 1), columns=None, return_df=False):
+    def normalise_columns(self, columns, span=(0, 1), return_df=False):
         """
         Use the sklearn MinMaxScaler to scale each columns values to a given 
         range. By deafult all columns are scaled, but a list of specific 
@@ -184,25 +185,61 @@ class DataProcessing():
         span : tuple, optional
             A tuple where the first entry is the min and the second
             value is the max. The default is (0, 1).
-        columns : list, optional
-            List of columns to scale. The default is None, meaning all columns.
+        columns : list
+            List of columns to scale.
         return_df : bool, optional
             If False the self.data will be returned as a ndarray if True 
             self.data will be returned as a pandas dataframe
+        Returns
+        -------
+        df : optional, pandas.DataFrame
+            Dataframe containing the normalised event data.
         """
         mm_scaler = preprocessing.MinMaxScaler(feature_range=span)
-        if columns == None:
-            columns = self.data.columns
-            self.data = mm_scaler.fit_transform(self.data)
-        else:
-            self.data[columns] = mm_scaler.fit_transform(self.data[columns])
-        
+        self.data[columns] = mm_scaler.fit_transform(self.data[columns])
         if return_df == True:
-            self.data = pd.DataFrame(self.data)
-            self.data.columns = columns
-        else:
-            pass
+            return self.data[columns]
         
+    def normalise_jet_columns(self, columns, span=(0, 1)):
+        """
+        This function normalises the data in the jet columns. Improved speed over
+        normalise_jet_columns_orig() function.
+    
+        Parameters
+        ----------
+        span : tuple, optional
+            A tuple where the first entry is the min and the second
+            value is the max. The default is (0, 1).
+        columns : list
+            List of columns which contain the jet data.
+        Returns
+        -------
+        df : pandas.DataFrame
+            Dataframe containing the normalised jet data.
+        """
+        print('normalising the jet data')
+        start = time.time()
+        input_data = self.data.copy(deep=True)
+
+        results = []
+        df = pd.DataFrame()
+        for i, col in enumerate(columns):
+            data_to_fit = input_data[col].values
+            unravelled_data = np.concatenate(data_to_fit).ravel()
+            length_to_split = input_data['ncleanedJet'].values.tolist()
+            
+            # Normalise the data
+            mm_scaler = preprocessing.MinMaxScaler(feature_range=(span))
+            normed_data = mm_scaler.fit_transform(unravelled_data.reshape(-1, 1)).reshape(-1)
+            
+            # Split data back into lists
+            output = [normed_data[x - y: x] for x, y in zip(accumulate(length_to_split), length_to_split)]
+            results.append(output)
+            df[col] = output
+        print(f"    elapsed time: {time.time()-start:0.3f}s")
+        return df  
+        
+
 class LabelMaker():
     """
     This Class contains functions for creating numeric labels for the training
@@ -234,7 +271,7 @@ class LabelMaker():
             encoding_dict = dict(zip(keys.tolist(), values.tolist()))
             print(f"label encoding: {encoding_dict}")
             
-        df_labels = pd.DataFrame(data=labels, columns=['label encoding'])
+        df_labels = pd.DataFrame(data=labels, columns=['label_encoding'])
         return df_labels, encoding_dict
     
     def onehot_encoding(data_list, verbose=True):
@@ -393,7 +430,7 @@ def make_ragged_tensor(input_data):
 
 def split_data(event_data, labels, weights, test_size, shuffle=True):
     """
-    This function splits a numpy array containg event data into test 
+    This function splits a numpy array containing event data into test 
     and train sets matched with the right labels.
     
     Parameters
@@ -454,14 +491,14 @@ def split_data(event_data, labels, weights, test_size, shuffle=True):
     
     return training_data, test_data
 
-def normalise_jet_columns(data_train, span=(0, 1), columns=None):
+def normalise_jet_columns_orig(data_train, span=(0, 1), columns=None):
     """
     This function normalises the data in the jet columns
 
     Parameters
     ----------
     data_train : pandas.DataFrame
-        DataFrame containg the jet data with each element being a numpy array.
+        DataFrame containing the jet data with each element being a numpy array.
     span : tuple, optional
         A tuple where the first entry is the min and the second
         value is the max. The default is (0, 1).
@@ -471,8 +508,7 @@ def normalise_jet_columns(data_train, span=(0, 1), columns=None):
     Returns
     -------
     data_train : pandas.DataFrame
-        Dataframe containg the normalised jet data.
-
+        Dataframe containing the normalised jet data.
     """
     print('normalising the jet data')
     start = time.time()
