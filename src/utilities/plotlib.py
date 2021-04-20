@@ -93,6 +93,56 @@ def confusion_matrix(cm, class_names, title, figsize=(4, 4), dpi=200, colourbar=
     plt.xlabel('Predicted label')
     return fig
 
+def mulit_confusion_matrix(cm_list, class_names, network_names, figsize=(4, 4), dpi=200, norm=True):
+    '''
+    This function returns multiple confusion matrices ploted on the same grid
+    to make comparison between networks easier.
+
+    Parameters
+    ----------
+    cm_list : list or array
+        Array containing the different confusion matrices.
+    class_names : list or array
+        Array containg the names of the different classes that are being 
+        distinguished.
+    network_names : list or array
+        Array containg the names of the different networks that are being 
+        compared.
+    title : str
+        title 
+    figsize : TYPE, optional
+        Figsize. The default is (4, 4).
+    dpi : TYPE, optional
+        The default is 200.
+
+    Returns
+    -------
+    fig.
+
+    '''
+    fig, axes = plt.subplots(ncols=len(cm_list), sharex=True, sharey=True)
+    axes[0].set_ylabel('True label')
+    tickmarks = np.arange(len(class_names))
+    plt.yticks(tickmarks,class_names)
+    plt.xticks(tickmarks,class_names)
+    
+    for idx,ax in enumerate(axes):
+        ax.set(adjustable='box', aspect='equal')
+        ax.set_xlabel('Predicted label')
+        ax.set_title(network_names[idx])
+        
+        if norm == True:
+            cm_list[idx] = np.around(cm_list[idx].astype('float') / cm_list[idx].sum(axis=1)[:, np.newaxis], decimals=2)
+        else:
+            pass
+        
+        ax.imshow(cm_list[idx],interpolation='nearest', cmap=plt.cm.Reds)
+        
+        for i, j in itertools.product(range(cm_list[idx].shape[0]), range(cm_list[idx].shape[1])):
+            ax.text(j, i, cm_list[idx][i, j], horizontalalignment="center", color="k")
+            
+    return fig
+    
 def plot_roc(pred, y, title, figsize=(6, 4), dpi=200):
     """
     Plots the ROC curve of a keras model.
