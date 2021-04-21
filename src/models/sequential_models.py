@@ -3,9 +3,14 @@ This file contains functions for generating sequential neural network
 models.
 """
 
-USE_GPU = False
+# ---------------------------------- Imports ----------------------------------
 
 import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from tensorflow.keras.losses import SparseCategoricalCrossentropy
+
+USE_GPU = False
 if USE_GPU:
     gpus = tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(gpus[0], True)
@@ -14,10 +19,6 @@ else:
     import os
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     print("Running tensorflow on CPU")
-
-from tensorflow import keras
-from tensorflow.keras import layers
-from tensorflow.keras.losses import SparseCategoricalCrossentropy
 
 # -----------------------------------------------------------------------------  
 
@@ -46,8 +47,8 @@ def base(layer1, layer2, input_shape=11):
     
     # Compile model
     model.compile(optimizer='adam',
-              loss=SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+                  loss=SparseCategoricalCrossentropy(from_logits=True),
+                  metrics=['accuracy'])
     return model
 
 def base2(layer1, layer2, input_shape, learning_rate=0):
@@ -79,13 +80,13 @@ def base2(layer1, layer2, input_shape, learning_rate=0):
                            kernel_initializer='random_normal'))
     
     # Compile model
-    if learning_rate==0:
+    if learning_rate == 0:
         opt = keras.optimizers.Adam()
     else:
         opt = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=opt,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 def base_with_dropout(layer1, layer2, input_shape=11, dropout=0.2):
@@ -110,8 +111,8 @@ def base_with_dropout(layer1, layer2, input_shape=11, dropout=0.2):
     
     # Compile model
     model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 def multi_class_base(layer1, layer2, input_shape=11, output_shape=4):
@@ -141,8 +142,8 @@ def multi_class_base(layer1, layer2, input_shape=11, output_shape=4):
     
     # Compile model
     model.compile(optimizer='Adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 models_list = [base, base2, base_with_dropout]
