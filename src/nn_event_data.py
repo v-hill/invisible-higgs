@@ -6,146 +6,219 @@ classify different event types.
 # ---------------------------------- Imports ----------------------------------
 
 # Code from other files in the repo
+from binary_classifier import BinaryClassifier
 import models.sequential_models as sequential_models
 import utilities.plotlib as plotlib
+from utilities.data_analysis import ModelResults, ModelResultsMulti
 
 # Python libraries
 import pickle
 import numpy as np
 import pandas as pd
 import time
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-from math import sqrt
 
-# -------------------------------- Data setup --------------------------------
+class EventNN(BinaryClassifier):
+    """
+    This class provides a wrapper for the data loading, model creating, model
+    training and analysis of sequential keras models. 
+    """
+    def __init__(self, args_model):
+        """
+        Initialse the model by specifying the location of the input data as 
+        well as the paramters to use in training the model.
+
+        Parameters
+        ----------
+        args_model : dict
+            Dictionary of model arguments.
+        """
+        super().__init__(args_model)
+        
+    def create_model(self, model_name):
+        """
+        Define which model from the models.sequential_models module to use and 
+        compile it using the model arguments stored in self.args_model.
+
+        Parameters
+        ----------
+        model_name : str
+            Name of function in models.sequential_models to use to create the
+            model.
+        """
+        if model_name=='base2':
+            self.model = sequential_models.base2(self.args_model['layer_1_neurons'], 
+                                    self.args_model['layer_2_neurons'], 
+                                    input_shape=self.args_model['layer_input_shape'],
+                                    learning_rate=self.args_model['learning_rate'])
+
+    def train_model(self, verbose_level):
+        """
+        Trains the model for a fixed number of epochs.
+
+        Parameters
+        ----------
+        verbose_level : int
+            0, 1, or 2. Verbosity mode.
+
+        Returns
+        -------
+        history : tensorflow.python.keras.callbacks.History
+            It's History.history attribute is a record of training loss values 
+            and metrics values at successive epochs, as well as validation 
+            loss values and validation metrics values.
+        """
+        data_train = self.df_event_data.iloc[:self.test_train_split]
+        data_test = self.df_event_data.iloc[self.test_train_split:]
+        labels_train = self.df_labels['label_encoding'].iloc[:self.test_train_split]
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:]
+        sample_weight = self.df_weights['sample_weight'].iloc[:self.test_train_split]
+        
+        history = self.model.fit(data_train, labels_train,
+                                 batch_size = args_model['batch_size'],
+                                 validation_data=(data_test, labels_test),
+                                 sample_weight=sample_weight,
+                                 epochs=args_model['epochs'],
+                                 verbose=verbose_level)
+        return history
+
+    def predict_test_data(self):
+        """
+        Return predictions of trainined model for the test dataset.
+
+        Returns
+        -------
+        labels_pred : numpy.ndarray
+            Predicted labels for the test dataset.
+        """
+        data_test = self.df_event_data.iloc[self.test_train_split:]
+        labels_pred = self.model.predict(data_test)
+        return labels_pred
+    
+    def discriminator_values(self):
+        labels_test = self.labels_test()
+        labels_pred = self.predict_test_data()
+        labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
+        labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
+        return labels_pred_signal, labels_pred_background
+
+    def significance_dataset(self):
+        # Make dataset
+        labels_pred = self.predict_test_data()
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:]
+        xs_weight = self.df_weights['xs_weight'].iloc[self.test_train_split:]
+        
+        dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'], index=labels_test.index)
+        dataset['xs_weight'] = xs_weight*140000
+        dataset['event_labels'] = labels_test
+        return dataset
+  
+# ------------------------------------ Main -----------------------------------
 
 SAVE_FOLDER = 'data_binary_classifier'
 DIR = SAVE_FOLDER + '\\'
 
-# Load files
-event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
-sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
-weight_nominal = np.load(DIR+'weight_nominal.npy', allow_pickle=True)
-xs_weight = np.load(DIR+'xs_weight.npy', allow_pickle=True)
-encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
-event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
-event_labels = event_labels.values
+args_model = {'model_type' : 'binary_classifier',
+              'model_architecture' : 'FNN',
+              'layer_1_neurons' : 64,
+              'layer_2_neurons' : 8,
+              'learning_rate' : 0.0004,
+              'batch_size' : 64,
+              'epochs' : 8,
+              'model' : 'base2'}
 
-test_fraction = 0.2
-data_train, data_test, labels_train, labels_test, sw_train, sw_test  = \
-    train_test_split(event_data, event_labels, 
-                     sample_weight, test_size=test_fraction)
+num_runs = 2
 
-# Take a sample of the data to speed up training
-sample_num = -1
-data_train = data_train[:sample_num]
-data_test = data_test[:sample_num]
-labels_train = labels_train[:sample_num]
-labels_test = labels_test[:sample_num]
-sw_train = sw_train[:sample_num]
-sw_test = sw_test[:sample_num]
+model_results_multi = ModelResultsMulti()
+event_nn = EventNN(args_model)
+event_nn.load_data(DIR)
+event_nn.load_event_data(DIR)
 
-# ------------------------------ Model training -------------------------------
+for i in range(num_runs):
+    START = time.time()
+    event_nn.shuffle_data()
+    event_nn.train_test_split(test_size=0.2)
+    event_nn.create_model(args_model['model'])
+    history = event_nn.train_model(verbose_level=0)
+    
+    # Calculate results
+    model_results = ModelResults(i)
+    model_results.training_history(history)
+    model_results.confusion_matrix(event_nn, cutoff_threshold=0.5)
+    model_results.roc_curve(event_nn)
+    model_results_multi.add_result(model_results)
+    print(f"    Run {i} time: {time.time()-START:0.2f}s")
+    
+df_results = model_results_multi.return_results()
 
-INPUT_SHAPE = event_data.shape[1]
-model = sequential_models.base2(64, 8, input_shape=INPUT_SHAPE, learning_rate=0.001)
+# ------------------------ Miscellaneous results plots ------------------------
 
-print("Fitting sequential model on event training data...")
-START = time.time()
-history = model.fit(data_train, labels_train, batch_size = 128,
-                    validation_data=(data_test, labels_test), 
-                    sample_weight=sw_train, epochs=16, verbose=2)
-print(f"    Elapsed training time: {time.time()-START:0.2f}s")
+params_history = {'title' : ('Model accuracy of feedforward neural network '
+                              'trained on event data'),
+                'x_axis' : 'Epoch number',
+                'y_axis' : 'Accuracy',
+                'legend' : ['training data', 'test data'],
+                'figsize' : (6, 4),
+                'dpi' : 200,
+                'colors' : ['#662E9B', '#F86624'],
+                'full_y' : False}
 
-test_loss, test_acc = model.evaluate(data_test, labels_test, verbose=2)
-print(f"    Test accuracy: {test_acc:0.5f}")
+params_cm = {'title' : ('Confusion matrix of feedforward neural network '
+                              'trained on event data'),
+              'x_axis' : 'Predicted label',
+              'y_axis' : 'True label',
+              'class_names' : ['ttH (signal)', 'tt¯ (background)'],
+              'figsize' : (6, 4),
+              'dpi' : 200,
+              'colourbar' : False}
 
-# --------------------------------- Plotting ----------------------------------
+params_roc = {'title' : ('ROC curve for the feedforward neural network '
+                              'trained on event data'),
+              'x_axis' : 'False Positive Rate',
+              'y_axis' : 'True Positive Rate',
+              'figsize' : (6, 4),
+              'dpi' : 200}
 
-# Plot training history
-fig1 = plotlib.training_history_plot(history, 'Event neural network model accuracy')
+params_discrim = {'title' : ('Distribution of discriminator values for the '
+                              'feedforward neural network trained on event data'),
+                  'x_axis' : 'Label prediction',
+                  'y_axis' : 'Number of events',
+                  'num_bins' : 50,
+                  'figsize' : (6, 4),
+                  'dpi' : 200,
+                  'colors' : ['brown', 'teal']}
 
+params_signif = {'title' : ('Significance plot for the feedforward neural '
+                             'network trained on event data'),
+                  'x_axis' : 'Discrimintor threshold value',
+                  'y_axis' : 's/sqrt(b)',
+                  'figsize' : (6, 4),
+                  'dpi' : 200}
 
-# Get model predictions and convert predictions into binary values
-labels_pred = model.predict(data_test)
-cutoff_threshold = 0.5
-labels_pred_binary = np.where(labels_pred > cutoff_threshold, 1, 0)
+# Plot average training history
+data_mean1, data_std1 = model_results_multi.average_training_history('history_training_data')
+data_mean2, data_std2 = model_results_multi.average_training_history('history_test_data')
+fig = plotlib.training_history_plot(data_mean1, data_mean2, params_history, error_bars=[data_std1, data_std2])
+print(f'average training accuracy: {data_mean1[-1]:0.4f} \u00B1 {data_std1[-1]:0.4f}')
+print(f'average test accuracy:     {data_mean2[-1]:0.4f} \u00B1 {data_std2[-1]:0.4f}')
 
-# Make confsuion matrix
-cm = confusion_matrix(labels_test, labels_pred_binary)
-class_names = ['ttH (signal)', 'tt¯ (background)']
-title = f'Confusion matrix for discriminator threshold of {cutoff_threshold}'
-fig2 = plotlib.confusion_matrix(cm, class_names, title)
+# Get the index of the row with the best accuracy on the test dataset
+idx_best = df_results['accuracy_training'].argmax()
+df_model_results = df_results.iloc[idx_best]
 
+# Plot best training history
+fig = plotlib.training_history_plot(df_model_results['history_training_data'], 
+                                      df_model_results['history_test_data'], 
+                                      params_history)
 
-# Plot ROC curve
-title_roc = 'ROC curve for event data model'
-fig3 = plotlib.plot_roc(labels_pred, labels_test, title_roc)
+# Plot best confusion matrix
+fig = plotlib.confusion_matrix(df_model_results, params_cm)
 
+# Plot best ROC curve
+fig = plotlib.plot_roc(df_model_results, params_roc)
 
 # Plot distribution of discriminator values
-labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
-labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
-title = "Distribution of discriminator values for the event-nn"
-fig4 = plotlib.plot_discriminator_vals(labels_pred_signal, labels_pred_background, title)
+fig = plotlib.plot_discriminator_vals(*event_nn.discriminator_values(), params_discrim)
 
-# Get model predictions
-labels_pred = model.predict(event_data)
-xs_weight = xs_weight.reshape((-1, 1))
-
-def calc_significance(num_thresholds, dataset):
-    bin_centres_sig = []
-    bin_vals_sig = []
-    bin_centres_back = []
-    bin_vals_back = []
-    
-    z_vals = []
-    z_vals2 = []
-    thresholds = np.linspace(0, 1, num_thresholds)
-    
-    for i in range(len(thresholds)-1):
-        
-        df_selection = dataset[dataset['labels_pred'].between(thresholds[i], 1)]
-
-        df_sig = df_selection[df_selection['event_labels']==1]
-        df_back = df_selection[df_selection['event_labels']==0]
-        sum_xs_weight_sig = df_sig['xs_weight'].sum()
-        sum_xs_weight_back = df_back['xs_weight'].sum()
-        
-        if sum_xs_weight_sig==0 or sum_xs_weight_back==0:
-            continue
-        
-        bin_centres_sig.append(thresholds[i])
-        bin_vals_sig.append(sum_xs_weight_sig)
-        bin_centres_back.append(thresholds[i])
-        bin_vals_back.append(sum_xs_weight_back)
-    
-        s = sum_xs_weight_sig
-        b = sum_xs_weight_back
-        
-        z = sqrt(2*((s+b)*np.log(1+(s/b))-s)) # Calculate significance 
-        z_vals.append(z)
-        z_vals2.append(s/(sqrt(b)))
-    return bin_centres_sig, np.asarray(z_vals), np.asarray(z_vals2)
-
-
-# Make dataset
-dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'])
-dataset['xs_weight'] = xs_weight*140000
-dataset['event_labels'] = event_labels
-
-bin_centres_sig, z_vals, z_vals2 = calc_significance(200, dataset)
-print(f'Max significance at discriminator value of {bin_centres_sig[z_vals.argmax()]:0.3f}')
-
-
-fig = plt.figure(figsize=(6, 4), dpi=200)
-plt.title("Significance plot for event FFN binary classifier, using xs_weight")
-plt.xlabel("Discrimintor threshold value")
-plt.xlim(-0.1, 1)
-plt.ylim(0, 8)
-plt.ylabel("ZA")
-plt.plot(bin_centres_sig, z_vals, '-', label='z_A')
-plt.plot(bin_centres_sig, z_vals2, '-', label=' S/sqrt(B)')
-plt.legend(loc='upper left')
+# Plot the signifiance plot
+sig_x, sig_y = model_results.calc_significance(event_nn.significance_dataset(), num_thresholds=200)
+fig = plotlib.significance(sig_x, sig_y, params_signif)
