@@ -4,9 +4,10 @@ This file contains functions for generating recurrent neural network models.
 
 # ---------------------------------- Imports ----------------------------------
 
-USE_GPU = False
-
 import tensorflow as tf
+from tensorflow import keras
+
+USE_GPU = False
 if USE_GPU:
     gpus = tf.config.experimental.list_physical_devices('GPU')
     tf.config.experimental.set_memory_growth(gpus[0], True)
@@ -16,11 +17,9 @@ else:
     os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     print("Running tensorflow on CPU")
 
-from tensorflow import keras
-
 # -----------------------------------------------------------------------------  
 
-def base(input_shape=[None, 6]):
+def base(input_shape=[None, 8]):
     """
     This function creates a neural network capable of taking as input the 
     variable length jet data in the form of a ragged tensor. This consists
@@ -47,8 +46,8 @@ def base(input_shape=[None, 6]):
     
     # Compile model
     model.compile(optimizer='adam',
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
@@ -63,14 +62,13 @@ def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
     # Compile model
     opt = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=opt,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
     """
     This function creates a neural network for multilabel classification.
-
     Parameters
     ----------
     layer1 : int
@@ -79,11 +77,9 @@ def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
         Number of neurons in layer 2 .
     input_shape : int, optional
         The input shape of the data. The default is [None, 6].
-
     Returns
     -------
     model : keras.Sequential
-
     """
         # Define an RNN with a single LSTM layer
     model = keras.Sequential([
@@ -95,16 +91,6 @@ def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
     
     # Compile model
     model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])    
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])    
     return model
-
-
-
-
-
-
-
-
-
-
