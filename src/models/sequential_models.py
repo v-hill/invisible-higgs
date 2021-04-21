@@ -50,7 +50,7 @@ def base(layer1, layer2, input_shape=11):
               metrics=['accuracy'])
     return model
 
-def base2(layer1, layer2, input_shape=11, learning_rate=0.01):
+def base2(layer1, layer2, input_shape, learning_rate=0):
     """
     base + custom learning rate for the Adam optimiser
          + 'binary_crossentropy' loss function
@@ -79,41 +79,11 @@ def base2(layer1, layer2, input_shape=11, learning_rate=0.01):
                            kernel_initializer='random_normal'))
     
     # Compile model
-    opt = keras.optimizers.Adam(learning_rate=learning_rate)
+    if learning_rate==0:
+        opt = keras.optimizers.Adam()
+    else:
+        opt = keras.optimizers.Adam(learning_rate=learning_rate)
     model.compile(optimizer=opt,
-              loss='binary_crossentropy',
-              metrics=['accuracy'])
-    return model
-
-def base3(layer1, layer2, input_shape=11):
-    """
-    base2 with standard learning rate
-
-    Parameters
-    ----------
-    layer1 : int
-        Number of neurons in the first layer
-    layer2 : int
-        Number of neurons in the second layer
-    input_shape : int, optional
-        The default is 12.
-
-    Returns
-    -------
-    model : keras.Sequential
-    """
-    # Define Sequential model with 2 hidden layers
-    model = keras.Sequential()
-    model.add(keras.Input(shape=(input_shape,)))
-    model.add(layers.Dense(layer1, activation='relu', 
-                           kernel_initializer='random_normal'))
-    model.add(layers.Dense(layer2, activation='relu', 
-                           kernel_initializer='random_normal'))
-    model.add(layers.Dense(1, activation='sigmoid', 
-                           kernel_initializer='random_normal'))
-    
-    # Compile model
-    model.compile(optimizer='Adam',
               loss='binary_crossentropy',
               metrics=['accuracy'])
     return model
