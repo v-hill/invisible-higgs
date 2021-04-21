@@ -5,106 +5,133 @@ This file contains the training on the RNN model on the jet data.
 # ---------------------------------- Imports ----------------------------------
 
 # Code from other files in the repo
+from binary_classifier import BinaryClassifier
 import models.recurrent_models as recurrent_models
 from utilities.data_preprocessing import make_ragged_tensor
 import utilities.plotlib as plotlib
+from utilities.data_analysis import ModelResults, ModelResultsMulti
 
 # Python libraries
 import pickle
-import pandas as pd
 import numpy as np
+import pandas as pd
 import time
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+from math import sqrt
+from sklearn.metrics import confusion_matrix, roc_curve, auc
 
-# -------------------------------- Data setup --------------------------------
+class JetRNN(BinaryClassifier):
+    """
+    This class provides a wrapper for the data loading, model creating, model
+    training and analysis of recurrent neural network keras models. 
+    """
+    def __init__(self, args_model):
+        """
+        Initialse the model by specifying the location of the input data as 
+        well as the paramters to use in training the model.
+
+        Parameters
+        ----------
+        args_model : dict
+            Dictionary of model arguments.
+        """
+        super().__init__(args_model)
+        
+    def make_ragged_tensor(self, verbose=False):
+        """
+        Transforms a pandas dataframe into a tf.RaggedTensor object.
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Prints execution time if True. The default is False.
+        """
+        START = time.time()
+        self.jet_data_rt = make_ragged_tensor(self.df_jet_data)
+        print(f"    Elapsed ragged tensor creation time: {time.time()-START:0.3f}s")
+        if verbose:
+            print(f'Shape: {self.jet_data_rt.shape}')
+            print(f'Number of partitioned dimensions: {self.jet_data_rt.ragged_rank}')
+            print(f'Flat values shape: {self.jet_data_rt.flat_values.shape}')
+
+    def create_model(self, model_name):
+        """
+        Define which model from the models.sequential_models module to use.
+
+        Parameters
+        ----------
+        model_name : str
+            Name of function in models.recurrent_models to use to create the
+            model.
+        """
+        if model_name=='base':
+            self.model = recurrent_models.base(input_shape=self.args_model['layer_input_shape'])
+
+    def train_model(self, verbose_level):
+        """
+        Trains the model for a fixed number of epochs.
+
+        Parameters
+        ----------
+        verbose_level : int
+            0, 1, or 2. Verbosity mode.
+
+        Returns
+        -------
+        history : tensorflow.python.keras.callbacks.History
+            It's History.history attribute is a record of training loss values 
+            and metrics values at successive epochs, as well as validation 
+            loss values and validation metrics values.
+        """
+        data_train = self.jet_data_rt[:self.test_train_split]
+        data_test = self.jet_data_rt[self.test_train_split:]
+        labels_train = self.df_labels['label_encoding'].iloc[:self.test_train_split].values
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:].values
+        sample_weight = self.df_weights['sample_weight'].iloc[:self.test_train_split].values
+        
+        history = self.model.fit(data_train, labels_train,
+                                  batch_size = args_model['batch_size'],
+                                  validation_data=(data_test, labels_test),
+                                  sample_weight=sample_weight,
+                                  epochs=args_model['epochs'],
+                                  verbose=verbose_level)
+        return history
+    
+    def predict_test_data(self):
+        """
+        Return predictions of trainined model for the test dataset.
+
+        Returns
+        -------
+        labels_pred : numpy.ndarray
+            Predicted labels for the test dataset.
+        """
+        data_test = self.jet_data_rt[self.test_train_split:]
+        labels_pred = self.model.predict(data_test)
+        return labels_pred
+    
+
+# ------------------------------------ Main -----------------------------------
 
 SAVE_FOLDER = 'data_binary_classifier'
 DIR = SAVE_FOLDER + '\\'
 
-# Load files
-df_jet_data = pd.read_hdf(DIR+'preprocessed_jet_data.hdf')
-sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
-encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
-event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
-event_labels = event_labels.values
+args_model = {'model_type' : 'binary_classifier',
+              'model_architecture' : 'RNN',
+              'batch_size' : 64,
+              'epochs' : 8,
+              'model' : 'base'}
 
-test_fraction = 0.2
-data_train, data_test, labels_train, labels_test_rnn, sw_train, sw_test  = \
-    train_test_split(df_jet_data, event_labels, 
-                      sample_weight, test_size=test_fraction)
+jet_rnn = JetRNN(args_model)
+jet_rnn.load_data(DIR)
+jet_rnn.load_jet_data(DIR)
+jet_rnn.shuffle_data()
+jet_rnn.make_ragged_tensor()
+jet_rnn.train_test_split(test_size=0.2)
+jet_rnn.create_model(args_model['model'])
+history = jet_rnn.train_model(verbose_level=1)
 
-# Take a sample of the data to speed up training
-sample_num = 10000
-data_train = data_train[:sample_num]
-data_test = data_test[:sample_num]
-labels_train = labels_train[:sample_num]
-labels_test_rnn = labels_test_rnn[:sample_num]
-sw_train = sw_train[:sample_num]
-sw_test = sw_test[:sample_num]
-
-data_train_rt = make_ragged_tensor(data_train)
-data_test_rt = make_ragged_tensor(data_test)
-print(f"Shape: {data_train_rt.shape}")
-print(f"Number of partitioned dimensions: {data_train_rt.ragged_rank}")
-print(f"Flat values shape: {data_train_rt.flat_values.shape}")
-
-# ------------------------------ Model training -------------------------------
-
-model = recurrent_models.base()
-
-print("Fitting RNN model on jet training data...")
-START = time.time()
-history = model.fit(data_train_rt, labels_train, batch_size = 64,
-                    validation_data=(data_test_rt, labels_test_rnn), 
-                    sample_weight=sw_train, epochs=32, verbose=2)
-print(f"    Elapsed training time: {time.time()-START:0.2f}s")
-
-test_loss, test_acc = model.evaluate(data_test_rt, labels_test_rnn, verbose=2)
-print(f"    Test accuracy: {test_acc:0.5f}")
-
-# --------------------------------- Plotting ----------------------------------
-
-# Plot training history
-fig1 = plotlib.training_history_plot(history, 'Jet RNN model accuracy')
-
-
-# Get model predictions
-labels_pred = model.predict(data_test_rt)
-
-# Convert predictions into binary values
-cutoff_threshold = 0.5 
-labels_pred_binary = np.where(labels_pred > cutoff_threshold, 1, 0)
-
-# Make confsuion matrix
-cm = confusion_matrix(labels_test_rnn, labels_pred_binary)
-class_names = ['signal', 'background']
-title = 'Confusion matrix'
-
-# Plot confusion matrix
-fig2 = plotlib.confusion_matrix(cm, class_names, title)
-
-
-# Plot ROC curve
-title_roc = 'ROC curve for jet data RNN'
-fig3 = plotlib.plot_roc(labels_pred, labels_test_rnn, title_roc)
-
-
-# Plot distribution of discriminator values
-bins = np.linspace(0, 1, 50)
-fig = plt.figure(figsize=(6, 4), dpi=200)
-
-plt.title("Distribution of discriminator values for the RNN")
-plt.xlabel("Label prediction")
-plt.ylabel("Density")
-
-labels_pred_signal = labels_pred[np.array(labels_test_rnn, dtype=bool)]
-labels_pred_background = labels_pred[np.invert(np.array(labels_test_rnn, dtype=bool))]
-
-# plt.hist(labels_pred, bins, alpha=0.5, label='all events')
-plt.hist(labels_pred_signal, bins, alpha=0.5, label='signal', color='brown')
-plt.hist(labels_pred_background, bins, alpha=0.5, label='background', color='teal')
-
-plt.legend(loc='upper right')
-plt.show()
+# Calculate results
+model_results = ModelResults(0)
+model_results.training_history(history)
+model_results.confusion_matrix(jet_rnn, cutoff_threshold=0.5)
+model_results.roc_curve(jet_rnn)
