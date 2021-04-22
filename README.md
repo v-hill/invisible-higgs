@@ -35,4 +35,4 @@ This repository is currently structured as follows.
         ├── multi_classification_rnn.py
         └── preprocess_data.py
     
-<img src="./Images/code_structure_3.png" alt="drawing" width="600"/>
+<img src="./Images/binary_classifier_code_structure.jpg" alt="drawing" width="800"/>
