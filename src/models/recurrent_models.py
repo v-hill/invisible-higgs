@@ -6,6 +6,7 @@ This file contains functions for generating recurrent neural network models.
 
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import layers
 
 USE_GPU = False
 if USE_GPU:
@@ -19,7 +20,7 @@ else:
 
 # -----------------------------------------------------------------------------  
 
-def base(input_shape=[None, 8]):
+def base(layer1, layer2, input_shape=[None, 8]):
     """
     This function creates a neural network capable of taking as input the 
     variable length jet data in the form of a ragged tensor. This consists
@@ -27,6 +28,10 @@ def base(input_shape=[None, 8]):
 
     Parameters
     ----------
+    layer1 : int
+        Number of neurons in layer 1, the LSTM layer.
+    layer2 : int
+        Number of neurons in layer 2.
     input_shape : int, optional
         The shape of jet event. The first entry 'None' specifies an unknown
         number of jets. The second entry (with default of 6), the number of 
@@ -38,10 +43,10 @@ def base(input_shape=[None, 8]):
     """
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
-        keras.layers.InputLayer(input_shape=input_shape, ragged=True),
-        keras.layers.LSTM(64),
-        keras.layers.Dense(8, activation='relu'),
-        keras.layers.Dense(1, activation='sigmoid')
+        layers.InputLayer(input_shape=input_shape, ragged=True),
+        layers.LSTM(layer1, kernel_initializer='random_normal'),
+        layers.Dense(layer2, activation='relu', kernel_initializer='random_normal'),
+        layers.Dense(1, activation='sigmoid')
     ])
     
     # Compile model
@@ -53,10 +58,10 @@ def base(input_shape=[None, 8]):
 def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
-        keras.layers.InputLayer(input_shape=input_shape, ragged=True),
-        keras.layers.LSTM(64),
-        keras.layers.Dense(8, activation='relu'),
-        keras.layers.Dense(1, activation='sigmoid')
+        layers.InputLayer(input_shape=input_shape, ragged=True),
+        layers.LSTM(64),
+        layers.Dense(8, activation='relu'),
+        layers.Dense(1, activation='sigmoid')
     ])
     
     # Compile model
@@ -69,24 +74,26 @@ def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
 def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
     """
     This function creates a neural network for multilabel classification.
+    
     Parameters
     ----------
     layer1 : int
-        Number of neurons in layer 1 the LSTM layer.
+        Number of neurons in layer 1, the LSTM layer.
     layer2 : int
-        Number of neurons in layer 2 .
+        Number of neurons in layer 2.
     input_shape : int, optional
         The input shape of the data. The default is [None, 6].
+        
     Returns
     -------
     model : keras.Sequential
     """
-        # Define an RNN with a single LSTM layer
+    # Define an RNN with a single LSTM layer
     model = keras.Sequential([
-        keras.layers.InputLayer(input_shape=input_shape, ragged=True),
-        keras.layers.LSTM(layer1),
-        keras.layers.Dense(layer2, activation='relu'),
-        keras.layers.Dense(output_shape, activation='softmax')
+        layers.InputLayer(input_shape=input_shape, ragged=True),
+        layers.LSTM(layer1),
+        layers.Dense(layer2, activation='relu'),
+        layers.Dense(output_shape, activation='softmax')
     ])
     
     # Compile model
