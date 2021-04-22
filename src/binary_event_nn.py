@@ -12,10 +12,13 @@ import utilities.plotlib as plotlib
 from utilities.data_analysis import ModelResults, ModelResultsMulti
 
 # Python libraries
-import pickle
 import numpy as np
 import pandas as pd
+import pickle
+import tensorflow as tf
 import time
+
+# ----------------------------- Class definitions -----------------------------
 
 class EventNN(BinaryClassifier):
     """
@@ -33,6 +36,7 @@ class EventNN(BinaryClassifier):
             Dictionary of model arguments.
         """
         super().__init__(args_model)
+        self.model = None
         
     def create_model(self, model_name):
         """
@@ -45,7 +49,8 @@ class EventNN(BinaryClassifier):
             Name of function in models.sequential_models to use to create the
             model.
         """
-        if model_name=='base2':
+        tf.keras.backend.clear_session()
+        if model_name == 'base2':
             self.model = sequential_models.base2(self.args_model['layer_1_neurons'], 
                                     self.args_model['layer_2_neurons'], 
                                     input_shape=self.args_model['layer_input_shape'],
@@ -68,13 +73,13 @@ class EventNN(BinaryClassifier):
             loss values and validation metrics values.
         """
         data_train = self.df_event_data.iloc[:self.test_train_split]
-        data_test = self.df_event_data.iloc[self.test_train_split:]
+        data_test = self.df_event_data.iloc[self.test_train_split:self.dataset_end]
         labels_train = self.df_labels['label_encoding'].iloc[:self.test_train_split]
-        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:]
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end]
         sample_weight = self.df_weights['sample_weight'].iloc[:self.test_train_split]
         
         history = self.model.fit(data_train, labels_train,
-                                 batch_size = args_model['batch_size'],
+                                 batch_size=args_model['batch_size'],
                                  validation_data=(data_test, labels_test),
                                  sample_weight=sample_weight,
                                  epochs=args_model['epochs'],
@@ -90,7 +95,7 @@ class EventNN(BinaryClassifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.df_event_data.iloc[self.test_train_split:]
+        data_test = self.df_event_data.iloc[self.test_train_split:self.dataset_end]
         labels_pred = self.model.predict(data_test)
         return labels_pred
     
@@ -104,8 +109,8 @@ class EventNN(BinaryClassifier):
     def significance_dataset(self):
         # Make dataset
         labels_pred = self.predict_test_data()
-        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:]
-        xs_weight = self.df_weights['xs_weight'].iloc[self.test_train_split:]
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end]
+        xs_weight = self.df_weights['xs_weight'].iloc[self.test_train_split:self.dataset_end]
         
         dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'], index=labels_test.index)
         dataset['xs_weight'] = xs_weight*140000
@@ -121,55 +126,60 @@ args_model = {'model_type' : 'binary_classifier',
               'model_architecture' : 'FNN',
               'layer_1_neurons' : 64,
               'layer_2_neurons' : 8,
-              'learning_rate' : 0.0004,
+              'learning_rate' : 0.001,
               'batch_size' : 64,
               'epochs' : 8,
               'model' : 'base2'}
 
-num_runs = 2
+num_runs = 5
+dataset_sample = 0.25
 
 model_results_multi = ModelResultsMulti()
 event_nn = EventNN(args_model)
 event_nn.load_data(DIR)
 event_nn.load_event_data(DIR)
 
+#%%
+
 for i in range(num_runs):
-    START = time.time()
+    model_results = ModelResults(i)
+    model_results.start_timer()
+
     event_nn.shuffle_data()
+    event_nn.reduce_dataset(dataset_sample)
     event_nn.train_test_split(test_size=0.2)
     event_nn.create_model(args_model['model'])
     history = event_nn.train_model(verbose_level=0)
     
     # Calculate results
-    model_results = ModelResults(i)
     model_results.training_history(history)
     model_results.confusion_matrix(event_nn, cutoff_threshold=0.5)
     model_results.roc_curve(event_nn)
+    model_results.stop_timer(verbose=True)
     model_results_multi.add_result(model_results)
-    print(f"    Run {i} time: {time.time()-START:0.2f}s")
-    
+
 df_results = model_results_multi.return_results()
 
-# ------------------------ Miscellaneous results plots ------------------------
+# -------------------------- Results plots parameters -------------------------
 
 params_history = {'title' : ('Model accuracy of feedforward neural network '
                               'trained on event data'),
-                'x_axis' : 'Epoch number',
-                'y_axis' : 'Accuracy',
-                'legend' : ['training data', 'test data'],
-                'figsize' : (6, 4),
-                'dpi' : 200,
-                'colors' : ['#662E9B', '#F86624'],
-                'full_y' : False}
+                  'x_axis' : 'Epoch number',
+                  'y_axis' : 'Accuracy',
+                  'legend' : ['training data', 'test data'],
+                  'figsize' : (6, 4),
+                  'dpi' : 200,
+                  'colors' : ['#662E9B', '#F86624'],
+                  'full_y' : False}
 
 params_cm = {'title' : ('Confusion matrix of feedforward neural network '
                               'trained on event data'),
-              'x_axis' : 'Predicted label',
-              'y_axis' : 'True label',
-              'class_names' : ['ttH (signal)', 'tt¯ (background)'],
-              'figsize' : (6, 4),
-              'dpi' : 200,
-              'colourbar' : False}
+             'x_axis' : 'Predicted label',
+             'y_axis' : 'True label',
+             'class_names' : ['ttH (signal)', 'tt¯ (background)'],
+             'figsize' : (6, 4),
+             'dpi' : 200,
+             'colourbar' : False}
 
 params_roc = {'title' : ('ROC curve for the feedforward neural network '
                               'trained on event data'),
@@ -194,12 +204,24 @@ params_signif = {'title' : ('Significance plot for the feedforward neural '
                   'figsize' : (6, 4),
                   'dpi' : 200}
 
+# --------------------------- Averaged results plots --------------------------
+
 # Plot average training history
 data_mean1, data_std1 = model_results_multi.average_training_history('history_training_data')
 data_mean2, data_std2 = model_results_multi.average_training_history('history_test_data')
-fig = plotlib.training_history_plot(data_mean1, data_mean2, params_history, error_bars=[data_std1, data_std2])
+fig = plotlib.training_history_plot(data_mean1, data_mean2, params_history, 
+                                    error_bars=[data_std1, data_std2])
 print(f'average training accuracy: {data_mean1[-1]:0.4f} \u00B1 {data_std1[-1]:0.4f}')
 print(f'average test accuracy:     {data_mean2[-1]:0.4f} \u00B1 {data_std2[-1]:0.4f}')
+
+# Plot average confusion matrix
+data_mean1, data_std1 = model_results_multi.average_confusion_matrix()
+fig = plotlib.confusion_matrix(data_mean1, params_cm)
+
+# Plot average ROC curve
+fig = plotlib.plot_roc(model_results_multi.average_roc_curve(), params_roc)
+
+# ---------------------------- Plots of best result ---------------------------
 
 # Get the index of the row with the best accuracy on the test dataset
 idx_best = df_results['accuracy_training'].argmax()
@@ -207,8 +229,8 @@ df_model_results = df_results.iloc[idx_best]
 
 # Plot best training history
 fig = plotlib.training_history_plot(df_model_results['history_training_data'], 
-                                      df_model_results['history_test_data'], 
-                                      params_history)
+                                    df_model_results['history_test_data'], 
+                                    params_history)
 
 # Plot best confusion matrix
 fig = plotlib.confusion_matrix(df_model_results, params_cm)
