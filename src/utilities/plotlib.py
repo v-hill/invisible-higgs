@@ -6,6 +6,8 @@ visualisation.
 # Python libraries
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import ListedColormap
 import itertools
 from textwrap import wrap
 from scipy import interp
@@ -50,21 +52,39 @@ def training_history_plot(history_training_data, history_test_data, params, erro
                      yerr=error_bars[1], 
                      capsize=3, lw=1, ls='--' ,
                      color=params['colors'][1])
-        ax.annotate(f'max accuracy:\n{history_training_data[-1]:0.4f} \u00B1 {error_bars[0][-1]:0.4f}', 
-                    (epochs[-1], history_training_data[-1]), 
+        ax.annotate(f'max accuracy:\n{history_test_data[-1]:0.2f} \u00B1 {error_bars[1][-1]:0.2f}', 
+                    (epochs[-1], history_test_data[-1]), 
                     xytext=(10, -35), textcoords='offset points',
                     ha='right', va='center', 
-                    fontsize=8, color=params['colors'][0])
-
+                    fontsize=9, color=params['colors'][1])
 
     if params['full_y']:
         plt.ylim(0, 1)
+    
+    # Set tick interval to 0.1
+    start, end = ax.get_ylim()
+    ax.yaxis.set_ticks(np.arange(0.2, 0.8, 0.1))
+    plt.ylim(0.35, 0.71)
     
     plt.title(params['title'])
     plt.xlabel(params['x_axis'])
     plt.ylabel(params['y_axis'])
     plt.legend(params['legend'], loc='lower right')
     return fig
+
+def custom_cmap():
+    """
+    Makes nice colours for the confusion matrix so that the black text over 
+    the top of each cell is still readable.
+
+    Returns
+    -------
+    newcmp : matplotlib.colors.ListedColormap
+        New colourmap
+    """
+    modified = cm.get_cmap('Greens', 256)
+    newcmp = ListedColormap(modified(np.linspace(0.1, 0.75, 256)))
+    return newcmp
 
 def confusion_matrix(model_results, params):
     """
@@ -94,13 +114,16 @@ def confusion_matrix(model_results, params):
     plt.yticks(tick_marks, params['class_names'])
     
     # Normalize the confusion matrix
-    cm = model_results['confusion_matrix']
+    try:
+        cm = model_results['confusion_matrix']
+    except:
+        cm = model_results
     cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=2)
     
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j], horizontalalignment="center", color="k")
     
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Reds)
+    plt.imshow(cm, interpolation='nearest', cmap=custom_cmap())
     if params['colourbar']:
         plt.colorbar()
     return fig
