@@ -14,6 +14,8 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 from utilities.data_preprocessing import make_ragged_tensor
 import models.combined_models as combined_models
 import utilities.plotlib as plotlib
+from binary_classifier import BinaryClassifier
+from utilities.data_analysis import ModelResults, ModelResultsMulti
 
 # Python libraries
 import pickle
@@ -21,6 +23,57 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
+import tensorflow as tf
+import time
+
+# ----------------------------- Class definitions -----------------------------
+
+class FullyConectedNetwork(BinaryClassifier):
+    """
+    This class provides a wrapper for the data loading, model creating, model
+    training and analysis of the complete neural network keras models. 
+    """
+    def __init__(self, args_model):
+        """
+        Initialse the model by specifying the location of the input data as 
+        well as the paramters to use in training the model.
+        Parameters
+        ----------
+        args_model : dict
+            Dictionary of model arguments.
+        """
+        super().__init__(args_model)
+        self.model = None
+        
+    def make_ragged_tensor(self, verbose=False):
+        """
+        Transforms a pandas dataframe into a tf.RaggedTensor object.
+        Parameters
+        ----------
+        verbose : bool, optional
+            Prints execution time if True. The default is False.
+        """
+        START = time.time()
+        self.jet_data_rt = make_ragged_tensor(self.df_jet_data.iloc[:self.dataset_end])
+        if verbose:
+            print(f"    Elapsed ragged tensor creation time: {time.time()-START:0.3f}s")
+            print(f'Shape: {self.jet_data_rt.shape}')
+            print(f'Number of partitioned dimensions: {self.jet_data_rt.ragged_rank}')
+            print(f'Flat values shape: {self.jet_data_rt.flat_values.shape}')
+            
+    def create_model(self, model_name):
+        """
+        Define which model from the models.sequential_models module to use.
+        Parameters
+        ----------
+        model_name : str
+            Name of function in models.recurrent_models to use to create the
+            model.
+        """
+        tf.keras.backend.clear_session()
+        del self.model
+        if model_name == 'base1':
+            self.model = combined_models.base1()
 
 #------------------------------- Load event data ------------------------------
 
