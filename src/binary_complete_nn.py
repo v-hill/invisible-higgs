@@ -28,7 +28,7 @@ import time
 
 # ----------------------------- Class definitions -----------------------------
 
-class FullyConectedNetwork(BinaryClassifier):
+class CombinedNeuralNetwork(BinaryClassifier):
     """
     This class provides a wrapper for the data loading, model creating, model
     training and analysis of the complete neural network keras models. 
@@ -73,115 +73,89 @@ class FullyConectedNetwork(BinaryClassifier):
         tf.keras.backend.clear_session()
         del self.model
         if model_name == 'base1':
-            self.model = combined_models.base1()
-
-#------------------------------- Load event data ------------------------------
-
+            self.model = combined_models.base1(input_shape1=self.args_model['event_layer_input_shape'],
+                                               input_shape2=self.args_model['jet_layer_input_shape'])
+            
+    def train_model(self, verbose_level):
+        """
+        Trains the model for a fixed number of epochs.
+        Parameters
+        ----------
+        verbose_level : int
+            0, 1, or 2. Verbosity mode.
+        Returns
+        -------
+        history : tensorflow.python.keras.callbacks.History
+            It's History.history attribute is a record of training loss values 
+            and metrics values at successive epochs, as well as validation 
+            loss values and validation metrics values.
+        """
+        data_train = self.df_event_data.iloc[:self.test_train_split].values
+        data_test = self.df_event_data.iloc[self.test_train_split:self.dataset_end].values
+        
+        data_train_rt = self.jet_data_rt[:self.test_train_split]
+        data_test_rt = self.jet_data_rt[self.test_train_split:self.dataset_end]
+        
+        labels_train = self.df_labels['label_encoding'].iloc[:self.test_train_split].values
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end].values
+        sample_weight = self.df_weights['sample_weight'].iloc[:self.test_train_split].values
+        
+        history = self.model.fit(x=[data_train,data_train_rt], y=labels_train,
+                                 batch_size=self.args_model['batch_size'],
+                                 validation_data=([data_test,data_test_rt], labels_test),
+                                 sample_weight=sample_weight,
+                                 epochs=self.args_model['epochs'],
+                                 verbose=verbose_level)
+        return history
+    
+    def predict_test_data(self):
+        """
+        Return predictions of trainined model for the test dataset.
+        Returns
+        -------
+        labels_pred : numpy.ndarray
+            Predicted labels for the test dataset.
+        """
+        data_test = self.df_event_data.iloc[self.test_train_split:self.dataset_end].values
+        data_test_rt = self.jet_data_rt[self.test_train_split:self.dataset_end]
+        labels_pred = self.model.predict([data_test,data_test_rt])
+        return labels_pred
+    
 SAVE_FOLDER = 'data_binary_classifier'
 DIR = SAVE_FOLDER + '\\'
 
-# Load files
-event_data = np.load(DIR+'preprocessed_event_data.npy', allow_pickle=True)
-sample_weight = np.load(DIR+'preprocessed_sample_weights.npy', allow_pickle=True)
-encoding_dict = pickle.load(open(DIR+'encoding_dict.pickle', 'rb'))
-event_labels = pd.read_hdf(DIR+'preprocessed_event_labels.hdf')
-event_labels = event_labels.values
+args_model = {'model_type' : 'binary_classifier',
+              'model_architecture' : 'FCN',
+              'batch_size' : 64,
+              'epochs' : 8,
+              'model' : 'base1'}
 
-# Generate a fixed random state
-random_state = np.random.randint(50)
-test_fraction = 0.2
+num_runs = 1
+dataset_sample = 0.05
+model_results_multi = ModelResultsMulti()
+FCN = CombinedNeuralNetwork(args_model)  
+FCN.load_data(DIR)
+FCN.load_event_data(DIR)
+FCN.load_jet_data(DIR)
 
-data_train1, data_test1, labels_train, labels_test, sw_train, sw_test  = \
-            train_test_split(event_data,
-                             event_labels,
-                             sample_weight,
-                             test_size=test_fraction,
-                             random_state=random_state)
-            
-# Take a sample of the data to speed up training
-sample_num = 10000
-data_train1 = data_train1[:sample_num]
-data_test1 = data_test1[:sample_num]
-
-#-------------------------------- Load jet data -------------------------------
-
-# Load files
-df_jet_data = pd.read_hdf(DIR+'preprocessed_jet_data.hdf')
-
-data_train2, data_test2, labels_train, labels_test, sw_train, sw_test  = \
-            train_test_split(df_jet_data,
-                             event_labels,
-                             sample_weight,
-                             test_size=test_fraction,
-                             random_state=random_state)
-
-# Take a sample of the data to speed up training
-data_train2 = data_train2[:sample_num]
-data_test2 = data_test2[:sample_num]
-labels_train = labels_train[:sample_num]
-labels_test = labels_test[:sample_num]
-sw_train = sw_train[:sample_num]
-sw_test = sw_test[:sample_num]
-
-jet_data_train_rt = make_ragged_tensor(data_train2)
-jet_data_test_rt = make_ragged_tensor(data_test2)
-
-# ------------------------------ Model training -------------------------------
-
-model = combined_models.base1(input_shape1=11, 
-                              input_shape2=[None, 6])
-
-history = model.fit(x=[data_train1, jet_data_train_rt], y=labels_train, 
-                    validation_data=([data_test1, jet_data_test_rt], labels_test), 
-                    sample_weight=sw_train, 
-                    epochs=16, 
-                    verbose=2)
-
-test_loss, test_acc = model.evaluate([data_test1, jet_data_test_rt], labels_test, verbose=2)
-print(f"    Test accuracy: {test_acc:0.5f}")
-
-# --------------------------------- Plotting ----------------------------------
-
-# Plot training history
-fig1 = plotlib.training_history_plot(history, 'Event neural network model accuracy')
+for i in range(num_runs):
+     model_results = ModelResults(i)
+     model_results.start_timer()
+     
+     FCN.shuffle_data()
+     FCN.reduce_dataset(dataset_sample)
+     FCN.make_ragged_tensor()
+     FCN.train_test_split(test_size=0.2)
+     FCN.create_model(args_model['model'])
+     history = FCN.train_model(verbose_level=0)
+     
+     # Calculate results
+     model_results.training_history(history)
+     model_results.confusion_matrix(FCN, cutoff_threshold=0.5)
+     model_results.roc_curve(FCN)
+     model_results.stop_timer(verbose=True)
+     model_results_multi.add_result(model_results)
+    
+df_results = model_results_multi.return_results()
 
 
-# Get model predictions
-labels_pred = model.predict([data_test1, jet_data_test_rt])
-
-# Convert predictions into binary values
-cutoff_threshold = 0.5 
-labels_pred_binary = np.where(labels_pred > cutoff_threshold, 1, 0)
-
-# Make confsuion matrix
-from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(labels_test, labels_pred_binary)
-class_names = ['signal', 'background']
-title = 'Confusion matrix'
-
-# Plot confusion matrix
-fig2 = plotlib.confusion_matrix(cm, class_names, title)
-
-
-# Plot ROC curve
-title_roc = 'ROC curve for event data model'
-fig = plotlib.plot_roc(labels_pred, labels_test, title_roc)
-
-
-# Plot distribution of discriminator values
-bins = np.linspace(0, 1, 50)
-fig = plt.figure(figsize=(6, 4), dpi=200)
-
-plt.title("Distribution of discriminator values for the RNN")
-plt.xlabel("Label prediction")
-plt.ylabel("Density")
-
-labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
-labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
-
-# plt.hist(labels_pred, bins, alpha=0.5, label='all events')
-plt.hist(labels_pred_signal, bins, alpha=0.5, label='signal', color='brown')
-plt.hist(labels_pred_background, bins, alpha=0.5, label='background', color='teal')
-
-plt.legend(loc='upper right')
-plt.show()

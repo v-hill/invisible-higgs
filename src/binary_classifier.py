@@ -107,5 +107,5 @@ class BinaryClassifier():
         TYPE
             Event labels for the test dataset.
         """
-        return self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end]
+        return self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end].values
     
