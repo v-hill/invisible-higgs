@@ -3,6 +3,8 @@ This file contains Classes for preparing the data for input into the neural
 networks.
 """
 
+# ---------------------------------- Imports ----------------------------------
+
 # Python libraries
 import pandas as pd
 import numpy as np
@@ -10,6 +12,8 @@ from sklearn import preprocessing
 import tensorflow as tf
 import time
 from itertools import accumulate
+
+# ----------------------------- Class definitions -----------------------------
 
 class DataProcessing():
     def __init__(self, data):
@@ -23,8 +27,6 @@ class DataProcessing():
         self.data = pd.concat(self.data_list, axis=0, ignore_index=True)
         self.all_columns = list(self.data.columns.values)
         
-    #--------------------------------------------------------------------------
-    
     def label_signal_noise(self, signal_list):
         """
         This function converts the dataset labels to one of two numeric values
@@ -70,8 +72,6 @@ class DataProcessing():
             col_name = event_labels.columns[0]
             self.data.insert(loc=1, column=col_name, value=values)
             
-    #--------------------------------------------------------------------------
-    
     def get_event_columns(self, columns_to_ignore, verbose=True):
         """
         This function generates a list of the columns to be used in the 
@@ -239,7 +239,6 @@ class DataProcessing():
         print(f"    elapsed time: {time.time()-start:0.3f}s")
         return df  
         
-
 class LabelMaker():
     """
     This Class contains functions for creating numeric labels for the training
