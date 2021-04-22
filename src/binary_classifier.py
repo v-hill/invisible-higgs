@@ -29,6 +29,8 @@ class BinaryClassifier():
             Dictionary of model arguments.
         """
         self.args_model = args_model
+        self.dataset_start = 0
+        self.dataset_end = -1
 
     def load_data(self, data_dir, verbose=True):
         START = time.time()
@@ -70,6 +72,18 @@ class BinaryClassifier():
         except:
             pass
 
+    def reduce_dataset(self, dataset_fraction):
+        """
+        Reduce the size of the dataset. Samples dataset values up to the       
+        'dataset_fraction' specified. 
+
+        Parameters
+        ----------
+        dataset_fraction : float
+            New dataset size as a fraction of the original. Values 0 to 1.
+        """
+        self.dataset_end = int(len(self.df_labels)*dataset_fraction)
+
     def train_test_split(self, test_size):
         """
         Define where to split the data to create seperate training and test
@@ -80,8 +94,18 @@ class BinaryClassifier():
         test_size : float
             Size of the test datast as a fraction of the whole dataset (0 to 1).
         """
+        
         self.args_model['test_train_fraction'] = test_size
         training_size = 1-test_size
-        test_train_split = int(len(self.df_labels)*training_size)
+        test_train_split = int(len(self.df_labels[:self.dataset_end])*training_size)
         self.test_train_split = test_train_split
         
+    def labels_test(self):
+        """
+        Returns event labels of the test dataset.
+        -------
+        TYPE
+            Event labels for the test dataset.
+        """
+        return self.df_labels['label_encoding'].iloc[self.test_train_split:self.dataset_end]
+    
