@@ -5,6 +5,7 @@ Functions for calculating results from trained neural networks.
 # ---------------------------------- Imports ----------------------------------
 
 # Python libraries
+import time
 import numpy as np
 import pandas as pd
 from math import sqrt
@@ -19,6 +20,17 @@ class ModelResults():
     def __init__(self, index):
         self.index = index
         
+    def start_timer(self):
+        """
+        Begin timing code execution.
+        """
+        self.time_start = time.time()
+        
+    def stop_timer(self, verbose=True):
+        self.time_elapsed = time.time() - self.time_start
+        if verbose:
+            print(f"    Run {self.index} time: {self.time_elapsed:0.2f}s")
+        
     def training_history(self, history):
         """
         Add training histroy to ModelResults object.
@@ -32,6 +44,8 @@ class ModelResults():
         self.history_test_data = history.history['val_accuracy']
         self.accuracy_training = history.history['accuracy'][-1]
         self.accuracy_test = history.history['val_accuracy'][-1]
+        self.accuracy_training_start = history.history['accuracy'][0]
+        self.accuracy_test_start = history.history['val_accuracy'][0]
         
     def confusion_matrix(self, neural_net, cutoff_threshold):
         """
@@ -63,10 +77,10 @@ class ModelResults():
     def roc_curve(self, neural_net):
         fpr, tpr, _ = roc_curve(neural_net.labels_test(), neural_net.predict_test_data())
         roc_auc = auc(fpr, tpr)
-        step = int(len(fpr)/1000)   # Select only 1000 values to plot
-        
-        self.roc_fpr_vals = fpr[::step]
-        self.roc_tpr_vals = tpr[::step]
+
+        indices = sorted(np.random.choice(len(fpr),1000,replace=False))
+        self.roc_fpr_vals = fpr[indices]
+        self.roc_tpr_vals = tpr[indices]
         self.roc_auc = roc_auc
         
     def calc_significance(self, dataset, num_thresholds=200, ZA=True):
@@ -146,6 +160,7 @@ class ModelResults():
         """
         output_dict = self.to_dict(floats_only)
         results_df = pd.DataFrame([output_dict])
+        results_df = results_df.reindex(sorted(results_df.columns), axis=1)
         return results_df
 
 class ModelResultsMulti():
@@ -188,4 +203,51 @@ class ModelResultsMulti():
         data_mean = all_data.mean(axis=0)
         data_std = all_data.std(axis=0)
         return data_mean, data_std
+        
+    def average_confusion_matrix(self):
+        """
+        Computes the mean and standard deviation for the confusion matrix.
+
+        Returns
+        -------
+        data_mean : numpy.ndarray
+            Mean values of the confusion matrix.
+        data_std : numpy.ndarray
+            Standard deviation values of the confusion matrix.
+        """
+        all_data = self.df_results['confusion_matrix'].values
+        all_data = np.concatenate(all_data, axis=0)
+        all_data = all_data.reshape([-1,2,2])
+        data_mean = all_data.mean(axis=0)
+        data_std = all_data.std(axis=0)
+        return data_mean, data_std
+        
+    def average_roc_curve(self):
+        """
+        Computes the mean values for the ROC curve plot.
+
+        Returns
+        -------
+        results_df : pandas.DataFrame
+            Dataframe containing the ROC curve results to plot.
+        """
+        results = {}
+        results['roc_auc'] = self.df_results['roc_auc'].mean()
+        
+        epochs = self.df_results.shape[0]
+        all_data_fpr = self.df_results['roc_fpr_vals'].values
+        all_data_fpr = np.concatenate(all_data_fpr, axis=0)
+        all_data_fpr = all_data_fpr.reshape([epochs,-1])
+        data_mean1 = all_data_fpr.mean(axis=0)
+        results['roc_fpr_vals'] = data_mean1
+
+        all_data_tpr = self.df_results['roc_tpr_vals'].values
+        all_data_tpr = np.concatenate(all_data_tpr, axis=0)
+        all_data_tpr = all_data_tpr.reshape([epochs,-1])
+        data_mean2 = all_data_tpr.mean(axis=0)
+        results['roc_tpr_vals'] = data_mean2
+        
+        results_df = pd.DataFrame([results])
+        
+        return results_df.iloc[0]
         
