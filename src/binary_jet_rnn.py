@@ -68,7 +68,7 @@ class JetRNN(BinaryClassifier):
         if model_name == 'base':
             self.model = recurrent_models.base(self.args_model['layer_1_neurons'], 
                                     self.args_model['layer_2_neurons'], 
-                                    input_shape=self.args_model['layer_input_shape'])
+                                    input_shape=self.args_model['jet_layer_input_shape'])
 
     def train_model(self, verbose_level):
         """

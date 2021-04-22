@@ -53,7 +53,7 @@ class EventNN(BinaryClassifier):
         if model_name == 'base2':
             self.model = sequential_models.base2(self.args_model['layer_1_neurons'], 
                                     self.args_model['layer_2_neurons'], 
-                                    input_shape=self.args_model['layer_input_shape'],
+                                    input_shape=self.args_model['event_layer_input_shape'],
                                     learning_rate=self.args_model['learning_rate'])
 
     def train_model(self, verbose_level):

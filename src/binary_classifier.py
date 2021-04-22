@@ -44,7 +44,7 @@ class BinaryClassifier():
     def load_event_data(self, data_dir, verbose=True):
         START = time.time()
         self.df_event_data = pd.read_pickle(data_dir+'preprocessed_event_data.pkl')
-        self.args_model['layer_input_shape'] = self.df_event_data.shape[1]
+        self.args_model['event_layer_input_shape'] = self.df_event_data.shape[1]
         if verbose:
             print(f"    Elapsed event data loading time: {time.time()-START:0.3f}s")
             
@@ -52,7 +52,7 @@ class BinaryClassifier():
         START = time.time()
         self.df_jet_data = pd.read_pickle(data_dir+'preprocessed_jet_data.pkl')
         num_jet_cols = self.df_jet_data.shape[1]
-        self.args_model['layer_input_shape'] = [None, num_jet_cols]
+        self.args_model['jet_layer_input_shape'] = [None, num_jet_cols]
         if verbose:
             print(f"    Elapsed jet data loading time: {time.time()-START:0.3f}s")
             
