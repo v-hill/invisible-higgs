@@ -32,7 +32,7 @@ def base(layer1, layer2, input_shape=[None, 8]):
         Number of neurons in layer 1, the LSTM layer.
     layer2 : int
         Number of neurons in layer 2.
-    input_shape : int, optional
+    input_shape : list, optional
         The shape of jet event. The first entry 'None' specifies an unknown
         number of jets. The second entry (with default of 6), the number of 
         variables which characterise a single jet. 
@@ -81,7 +81,7 @@ def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
         Number of neurons in layer 1, the LSTM layer.
     layer2 : int
         Number of neurons in layer 2.
-    input_shape : int, optional
+    input_shape : list, optional
         The input shape of the data. The default is [None, 6].
         
     Returns
