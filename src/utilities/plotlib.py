@@ -64,7 +64,7 @@ def training_history_plot(history_training_data, history_test_data, params, erro
     # Set tick interval to 0.1
     start, end = ax.get_ylim()
     ax.yaxis.set_ticks(np.arange(0.2, 0.8, 0.1))
-    plt.ylim(0.35, 0.71)
+    plt.ylim(start, end)
     
     plt.title(params['title'])
     plt.xlabel(params['x_axis'])
