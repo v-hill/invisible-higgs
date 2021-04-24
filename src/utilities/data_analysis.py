@@ -5,6 +5,7 @@ Functions for calculating results from trained neural networks.
 # ---------------------------------- Imports ----------------------------------
 
 # Python libraries
+from datetime import datetime
 import time
 import numpy as np
 import pandas as pd
@@ -18,7 +19,7 @@ class ModelResults():
     This class calculates results from the trained EventNN model.
     """
     def __init__(self, index):
-        self.index = index
+        self.run_index = index
         self.time_start = 0
         self.time_elapsed = 0
         
@@ -39,7 +40,7 @@ class ModelResults():
         """
         self.time_elapsed = time.time() - self.time_start
         if verbose:
-            print(f"    Run {self.index} time: {self.time_elapsed:0.2f}s")
+            print(f"    Run {self.run_index} time: {self.time_elapsed:0.2f}s")
         
     def training_history(self, history):
         """
@@ -165,7 +166,7 @@ class ModelResults():
     def to_dict(self, floats_only=False):
         """
         Return a dictionary of the class attributes.
-
+        
         Parameters
         ----------
         floats_only : bool, optional
@@ -180,30 +181,25 @@ class ModelResults():
         """
         self_dict = self.__dict__
         if floats_only:
-            self_dict = {k: v for k, v in self_dict.items() 
-                         if type(v) is float or type(v) is np.float64}
-            return self_dict
+            types = [float, int, np.float64, np.int32]
+            self_dict = {k: v for k, v in self_dict.items() if type(v) in types}
         return self_dict
     
-    def to_dataframe(self, floats_only=False):
+    def to_dataframe(self):
         """
         Return a pandas dataframe of the class attributes.
-
-        Parameters
-        ----------
-        floats_only : bool, optional
-            If floats_only is True, then only the attributes which are single
-            values will be returned. Else all attribute are returned.
-            The default is False.
 
         Returns
         -------
         results_df : pandas.DataFrame
             Dataframe representation of class attributes.
         """
-        output_dict = self.to_dict(floats_only)
+        output_dict = self.to_dict()
         results_df = pd.DataFrame([output_dict])
         results_df = results_df.reindex(sorted(results_df.columns), axis=1)
+        
+        index_col = results_df.pop('run_index')
+        results_df.insert(0, 'run_index', index_col)
         return results_df
 
 class ModelResultsMulti():
@@ -213,15 +209,37 @@ class ModelResultsMulti():
     """
     def __init__(self):
         self.df_results = pd.DataFrame()
-        self.results_list = []
         
-    def add_result(self, result):
-        self.results_list.append(result)
-        df = result.to_dataframe(floats_only=False)
+    def add_result(self, result, additional_results={}):
+        """
+        Add a training result to the main dataframe.
+
+        Parameters
+        ----------
+        result : ModelResults
+            ModelResults class object of training results.
+         additional_results : dict
+            Additional values to add to model_results dataframe in the form 
+            of a dictionary. Used to add model arguments to results.
+        """
+        df = result.to_dataframe()
+        for key, value in additional_results.items():
+            try:
+                df.insert(1, key, value)
+            except:
+                pass
+            
         self.df_results = pd.concat([self.df_results, df], axis=0, ignore_index=True)
-        
+
     def return_results(self):
         return self.df_results
+    
+    def save(self, filename, timestamp=True):
+        if timestamp:
+            now = datetime.today().strftime('%Y_%m_%d__%H_%M_%S__')
+            filename = now + filename
+        self.df_results.to_pickle(filename)
+        
     
     def average_training_history(self, history_val):
         """
