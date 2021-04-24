@@ -21,7 +21,7 @@ from tensorflow.keras import layers
 
 # ----------------------------------- Models ---------------------------------- 
 
-def base1(input_shape1=11, input_shape2=[None, 6]):
+def base1(input_shape1, input_shape2):
     """
     Create a multi-input combined neural network with two branches.
     One branch uses an FFN for the event data, the other branch and RNN on the
@@ -29,10 +29,10 @@ def base1(input_shape1=11, input_shape2=[None, 6]):
 
     Parameters
     ----------
-    input_shape1 : int, optional
-        Shape of event level variable data. The default is 11.
-    input_shape2 : list, optional
-        Dimensions of ragged tensor jet data. The default is [None, 6].
+    input_shape1 : int
+        Shape of event level variable data.
+    input_shape2 : list
+        Dimensions of ragged tensor jet data.
 
     Returns
     -------
@@ -58,14 +58,14 @@ def base1(input_shape1=11, input_shape2=[None, 6]):
     
     # apply a FC layer and then a regression prediction on the
     # combined outputs
-    z = layers.Dense(2, activation="relu")(combined)
+    z = layers.Dense(4, activation="relu")(combined)
     z = layers.Dense(1, activation='sigmoid')(z)
     
     model = keras.Model(inputs=[x.input, y.input], outputs=z)
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
     return model
 
-def multi_label_base(input_shape1=11, input_shape2=[None, 6], output_shape=4):
+def multi_label_base(input_shape1, input_shape2, output_shape=4):
     """
     Create a multi-input combined neural network with two branches.
     One branch uses an FFN for the event data, the other branch and RNN on the
@@ -73,10 +73,10 @@ def multi_label_base(input_shape1=11, input_shape2=[None, 6], output_shape=4):
 
     Parameters
     ----------
-    input_shape1 : int, optional
-        Shape of event level variable data. The default is 11.
-    input_shape2 : list, optional
-        Dimensions of ragged tensor jet data. The default is [None, 6].
+    input_shape1 : int
+        Shape of event level variable data.
+    input_shape2 : list
+        Dimensions of ragged tensor jet data.
 
     Returns
     -------
@@ -108,7 +108,4 @@ def multi_label_base(input_shape1=11, input_shape2=[None, 6], output_shape=4):
     model = keras.Model(inputs=[x.input, y.input], outputs=z)
     model.compile(optimizer='adam', loss='categorical_crossentropy', 
                   metrics=['accuracy'])
-    
     return model
-
-

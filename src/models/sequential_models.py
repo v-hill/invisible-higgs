@@ -122,9 +122,9 @@ def multi_class_base(layer1, layer2, input_shape=11, output_shape=4):
     Parameters
     ----------
     layer1 : int
-        Number of neurons in layer 1 .
+        Number of neurons in layer 1.
     layer2 : int
-        Number of neurons in layer 2 .
+        Number of neurons in layer 2.
     input_shape : int, optional
         The input shape of the data. The default is 11.
     Returns
