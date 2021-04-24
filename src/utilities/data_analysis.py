@@ -19,6 +19,8 @@ class ModelResults():
     """
     def __init__(self, index):
         self.index = index
+        self.time_start = 0
+        self.time_elapsed = 0
         
     def start_timer(self):
         """
@@ -27,6 +29,14 @@ class ModelResults():
         self.time_start = time.time()
         
     def stop_timer(self, verbose=True):
+        """
+        Stop programme timer and optionally print the run time.
+
+        Parameters
+        ----------
+        verbose : TYPE, bool
+            Print run time. The default is True.
+        """
         self.time_elapsed = time.time() - self.time_start
         if verbose:
             print(f"    Run {self.index} time: {self.time_elapsed:0.2f}s")
@@ -37,8 +47,8 @@ class ModelResults():
 
         Parameters
         ----------
-        history : TYPE
-            DESCRIPTION.
+        history : tensorflow.python.keras.callbacks.History
+            Model training history.
         """
         self.history_training_data = history.history['accuracy']
         self.history_test_data = history.history['val_accuracy']
@@ -59,10 +69,10 @@ class ModelResults():
         self.confusion_matrix = confusion_matrix(neural_net.labels_test(), 
                                                  labels_pred_binary)
 
-        TP = self.confusion_matrix[0,0]
-        TN = self.confusion_matrix[1,1]
-        FP = self.confusion_matrix[1,0]
-        FN = self.confusion_matrix[0,1]
+        TP = self.confusion_matrix[0, 0]
+        TN = self.confusion_matrix[1, 1]
+        FP = self.confusion_matrix[1, 0]
+        FN = self.confusion_matrix[0, 1]
         
         accuracy = (TP+TN)/(TP+FP+FN+TN)
         recall = TP/(TP+FN)
@@ -74,16 +84,49 @@ class ModelResults():
         self.cm_precision = precision
         self.cm_f_score = f_score
     
-    def roc_curve(self, neural_net):
+    def roc_curve(self, neural_net, sample_vals=250):
+        """
+        Produce the receiver operating characteristic curve (ROC curve) values.
+
+        Parameters
+        ----------
+        neural_net : EventNN, JetRNN
+            Keras model class
+        sample_vals : int, optional
+            The number of ROC curve values to keep. Saves a random sample
+            of the full set of values. The default is 250.
+        """
         fpr, tpr, _ = roc_curve(neural_net.labels_test(), neural_net.predict_test_data())
         roc_auc = auc(fpr, tpr)
 
-        indices = sorted(np.random.choice(len(fpr),1000,replace=False))
+        indices = sorted(np.random.choice(len(fpr), sample_vals, replace=False))
         self.roc_fpr_vals = fpr[indices]
         self.roc_tpr_vals = tpr[indices]
         self.roc_auc = roc_auc
         
     def calc_significance(self, dataset, num_thresholds=200, ZA=True):
+        """
+        Calculate the significance plot.
+
+        Parameters
+        ----------
+        dataset : pandas.core.frame.DataFrame
+            Dataframe of values needed to create significance plot.
+        num_thresholds : int, optional
+            Number of discriminator threshold values to calculate the 
+            significance for. Number of points generated to plot.
+            The default is 200.
+        ZA : bool, optional
+            Whether to use the full formula for the significance, or simple
+            use s/sqrt(b) approximation. The default is True.
+
+        Returns
+        -------
+        bin_centres_sig : list
+            List of threshold values. x-axis vals.
+        sig_vals : numpy.ndarray
+            Values for the significance. 
+        """
         bin_centres_sig = []
         bin_vals_sig = []
         bin_centres_back = []
@@ -93,12 +136,12 @@ class ModelResults():
         
         for i in range(len(thresholds)-1):
             df_selection = dataset[dataset['labels_pred'].between(thresholds[i], 1)]
-            df_sig = df_selection[df_selection['event_labels']==1]
-            df_back = df_selection[df_selection['event_labels']==0]
+            df_sig = df_selection[df_selection['event_labels'] == 1]
+            df_back = df_selection[df_selection['event_labels'] == 0]
             sum_xs_weight_sig = df_sig['xs_weight'].sum()
             sum_xs_weight_back = df_back['xs_weight'].sum()
             
-            if sum_xs_weight_sig<=0 or sum_xs_weight_back<=0:
+            if sum_xs_weight_sig <= 0 or sum_xs_weight_back <= 0:
                 continue
             
             bin_centres_sig.append(thresholds[i])
@@ -109,7 +152,7 @@ class ModelResults():
             s = sum_xs_weight_sig
             b = sum_xs_weight_back
             
-            if ZA==True:
+            if ZA == True:
                 z = sqrt(2*((s+b)*np.log(1+(s/b))-s)) # Calculate significance 
                 sig_vals.append(z)
             else:
@@ -199,7 +242,7 @@ class ModelResultsMulti():
         epochs = len(self.df_results[history_val].iloc[0])
         all_data = self.df_results[history_val].values
         all_data = np.concatenate(all_data)
-        all_data = all_data.reshape([-1,epochs])
+        all_data = all_data.reshape([-1, epochs])
         data_mean = all_data.mean(axis=0)
         data_std = all_data.std(axis=0)
         return data_mean, data_std
@@ -217,7 +260,7 @@ class ModelResultsMulti():
         """
         all_data = self.df_results['confusion_matrix'].values
         all_data = np.concatenate(all_data, axis=0)
-        all_data = all_data.reshape([-1,2,2])
+        all_data = all_data.reshape([-1, 2, 2])
         data_mean = all_data.mean(axis=0)
         data_std = all_data.std(axis=0)
         return data_mean, data_std
@@ -237,13 +280,13 @@ class ModelResultsMulti():
         epochs = self.df_results.shape[0]
         all_data_fpr = self.df_results['roc_fpr_vals'].values
         all_data_fpr = np.concatenate(all_data_fpr, axis=0)
-        all_data_fpr = all_data_fpr.reshape([epochs,-1])
+        all_data_fpr = all_data_fpr.reshape([epochs, -1])
         data_mean1 = all_data_fpr.mean(axis=0)
         results['roc_fpr_vals'] = data_mean1
 
         all_data_tpr = self.df_results['roc_tpr_vals'].values
         all_data_tpr = np.concatenate(all_data_tpr, axis=0)
-        all_data_tpr = all_data_tpr.reshape([epochs,-1])
+        all_data_tpr = all_data_tpr.reshape([epochs, -1])
         data_mean2 = all_data_tpr.mean(axis=0)
         results['roc_tpr_vals'] = data_mean2
         
