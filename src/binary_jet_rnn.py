@@ -115,86 +115,87 @@ class JetRNN(BinaryClassifier):
     
 # ------------------------------------ Main -----------------------------------
 
-SAVE_FOLDER = 'data_binary_classifier'
-DIR = SAVE_FOLDER + '\\'
-
-args_model = {'model_type' : 'binary_classifier',
-              'model_architecture' : 'RNN',
-              'layer_1_neurons' : 16,
-              'layer_2_neurons' : 8,
-              'batch_size' : 64,
-              'epochs' : 8,
-              'model' : 'base'}
-
-num_runs = 5
-dataset_sample = 0.25
-
-model_results_multi = ModelResultsMulti()
-jet_rnn = JetRNN(args_model)
-jet_rnn.load_data(DIR)
-jet_rnn.load_jet_data(DIR)
-
-for i in range(num_runs):
-    model_results = ModelResults(i)
-    model_results.start_timer()
+if __name__ == "__main__":
+    SAVE_FOLDER = 'data_binary_classifier'
+    DIR = SAVE_FOLDER + '\\'
     
-    jet_rnn.shuffle_data()
-    jet_rnn.reduce_dataset(dataset_sample)
-    jet_rnn.make_ragged_tensor()
-    jet_rnn.train_test_split(test_size=0.2)
-    jet_rnn.create_model(args_model['model'])
-    history = jet_rnn.train_model(verbose_level=0)
+    args_model = {'model_type' : 'binary_classifier',
+                  'model_architecture' : 'RNN',
+                  'layer_1_neurons' : 16,
+                  'layer_2_neurons' : 8,
+                  'batch_size' : 64,
+                  'epochs' : 8,
+                  'model' : 'base'}
     
-    # Calculate results
-    model_results.training_history(history)
-    model_results.confusion_matrix(jet_rnn, cutoff_threshold=0.5)
-    model_results.roc_curve(jet_rnn)
-    model_results.stop_timer(verbose=True)
-    model_results_multi.add_result(model_results)
+    num_runs = 5
+    dataset_sample = 0.25
     
-df_results = model_results_multi.return_results()
-
-# -------------------------- Results plots parameters -------------------------
-
-params_history = {'title' : ('Model accuracy of recurrent neural network '
-                             'trained on jet data'),
-                'x_axis' : 'Epoch number',
-                'y_axis' : 'Accuracy',
-                'legend' : ['training data', 'test data'],
-                'figsize' : (6, 4),
-                'dpi' : 200,
-                'colors' : ['#662E9B', '#F86624'],
-                'full_y' : False}
-
-params_cm = {'title' : ('Confusion matrix of recurrent neural network '
-                              'trained on jet data'),
-              'x_axis' : 'Predicted label',
-              'y_axis' : 'True label',
-              'class_names' : ['ttH (signal)', 'tt¯ (background)'],
-              'figsize' : (6, 4),
-              'dpi' : 200,
-              'colourbar' : False}
-
-params_roc = {'title' : ('ROC curve for the recurrent neural network '
-                              'trained on jet data'),
-              'x_axis' : 'False Positive Rate',
-              'y_axis' : 'True Positive Rate',
-              'figsize' : (6, 4),
-              'dpi' : 200}
-
-# --------------------------- Averaged results plots --------------------------
-
-# Plot average training history
-data_mean1, data_std1 = model_results_multi.average_training_history('history_training_data')
-data_mean2, data_std2 = model_results_multi.average_training_history('history_test_data')
-fig = plotlib.training_history_plot(data_mean1, data_mean2, params_history, 
-                                    error_bars=[data_std1, data_std2])
-print(f'average training accuracy: {data_mean1[-1]:0.4f} \u00B1 {data_std1[-1]:0.4f}')
-print(f'average test accuracy:     {data_mean2[-1]:0.4f} \u00B1 {data_std2[-1]:0.4f}')
-
-# Plot average confusion matrix
-data_mean1, data_std1 = model_results_multi.average_confusion_matrix()
-fig = plotlib.confusion_matrix(data_mean1, params_cm)
-
-# Plot average ROC curve
-fig = plotlib.plot_roc(model_results_multi.average_roc_curve(), params_roc)
+    model_results_multi = ModelResultsMulti()
+    jet_rnn = JetRNN(args_model)
+    jet_rnn.load_data(DIR)
+    jet_rnn.load_jet_data(DIR)
+    
+    for i in range(num_runs):
+        model_results = ModelResults(i)
+        model_results.start_timer()
+        
+        jet_rnn.shuffle_data()
+        jet_rnn.reduce_dataset(dataset_sample)
+        jet_rnn.make_ragged_tensor()
+        jet_rnn.train_test_split(test_size=0.2)
+        jet_rnn.create_model(args_model['model'])
+        history = jet_rnn.train_model(verbose_level=0)
+        
+        # Calculate results
+        model_results.training_history(history)
+        model_results.confusion_matrix(jet_rnn, cutoff_threshold=0.5)
+        model_results.roc_curve(jet_rnn)
+        model_results.stop_timer(verbose=True)
+        model_results_multi.add_result(model_results)
+        
+    df_results = model_results_multi.return_results()
+    
+    # -------------------------- Results plots parameters -------------------------
+    
+    params_history = {'title' : ('Model accuracy of recurrent neural network '
+                                 'trained on jet data'),
+                    'x_axis' : 'Epoch number',
+                    'y_axis' : 'Accuracy',
+                    'legend' : ['training data', 'test data'],
+                    'figsize' : (6, 4),
+                    'dpi' : 200,
+                    'colors' : ['#662E9B', '#F86624'],
+                    'full_y' : False}
+    
+    params_cm = {'title' : ('Confusion matrix of recurrent neural network '
+                                  'trained on jet data'),
+                  'x_axis' : 'Predicted label',
+                  'y_axis' : 'True label',
+                  'class_names' : ['ttH (signal)', 'tt¯ (background)'],
+                  'figsize' : (6, 4),
+                  'dpi' : 200,
+                  'colourbar' : False}
+    
+    params_roc = {'title' : ('ROC curve for the recurrent neural network '
+                                  'trained on jet data'),
+                  'x_axis' : 'False Positive Rate',
+                  'y_axis' : 'True Positive Rate',
+                  'figsize' : (6, 4),
+                  'dpi' : 200}
+    
+    # --------------------------- Averaged results plots --------------------------
+    
+    # Plot average training history
+    data_mean1, data_std1 = model_results_multi.average_training_history('history_training_data')
+    data_mean2, data_std2 = model_results_multi.average_training_history('history_test_data')
+    fig = plotlib.training_history_plot(data_mean1, data_mean2, params_history, 
+                                        error_bars=[data_std1, data_std2])
+    print(f'average training accuracy: {data_mean1[-1]:0.4f} \u00B1 {data_std1[-1]:0.4f}')
+    print(f'average test accuracy:     {data_mean2[-1]:0.4f} \u00B1 {data_std2[-1]:0.4f}')
+    
+    # Plot average confusion matrix
+    data_mean1, data_std1 = model_results_multi.average_confusion_matrix()
+    fig = plotlib.confusion_matrix(data_mean1, params_cm)
+    
+    # Plot average ROC curve
+    fig = plotlib.plot_roc(model_results_multi.average_roc_curve(), params_roc)
