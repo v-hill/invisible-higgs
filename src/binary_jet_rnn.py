@@ -17,12 +17,14 @@ args_model = {'model_type' : 'binary_classifier',
               'model_architecture' : 'JetRNN',
               'layer_1_neurons' : 16,
               'layer_2_neurons' : 4,
+              'output_shape' : 1,
+              'learning_rate' : 0.001,
               'batch_size' : 64,
               'epochs' : 8,
               'model' : 'base'}
 
-num_runs = 2
-dataset_sample = 0.1
+num_runs = 10
+dataset_sample = 0.25
 
 all_results = ModelResultsMulti()
 jet_rnn = JetRNN(args_model)
@@ -34,6 +36,7 @@ for i in range(num_runs):
     all_results.add_result(model_result, args_model)
 
 df_all_results = all_results.return_results()
+all_results.save('binary_jet_rnn.pkl')
 
 # -------------------------- Results plots parameters -------------------------
 
