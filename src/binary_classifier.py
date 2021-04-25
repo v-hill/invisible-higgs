@@ -395,7 +395,7 @@ class CombinedNN(BinaryClassifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end]
+        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
         data_test_rt = self.jet_data_rt[self.tt_split:self.dataset_end]
         
         labels_pred = self.model.predict([data_test,data_test_rt])
