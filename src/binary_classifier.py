@@ -149,11 +149,9 @@ class EventNN(BinaryClassifier):
             model.
         """
         tf.keras.backend.clear_session()
-        if model_name == 'base2':
-            self.model = sequential.base2(self.args_model['layer_1_neurons'], 
-                                          self.args_model['layer_2_neurons'], 
-                                          input_shape=self.args_model['event_layer_input_shape'],
-                                          learning_rate=self.args_model['learning_rate'])
+        del self.model
+        if model_name == 'base':
+            self.model = sequential.base(self.args_model)
 
     def train_model(self, verbose_level):
         """
@@ -266,9 +264,7 @@ class JetRNN(BinaryClassifier):
         tf.keras.backend.clear_session()
         del self.model
         if model_name == 'base':
-            self.model = recurrent.base(self.args_model['layer_1_neurons'], 
-                                        self.args_model['layer_2_neurons'], 
-                                        input_shape=self.args_model['jet_layer_input_shape'])
+            self.model = recurrent.base(self.args_model)
 
     def train_model(self, verbose_level):
         """
@@ -416,10 +412,12 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
     history = neural_net.train_model(verbose_level=0)
+    success = model_result.verify_training(neural_net)
     
     # Calculate results
-    model_result.training_history(history)
-    model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
-    model_result.roc_curve(neural_net)
+    if success:
+        model_result.training_history(history)
+        model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
+        model_result.roc_curve(neural_net)
     model_result.stop_timer(verbose=True)
     return model_result
