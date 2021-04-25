@@ -15,8 +15,8 @@ from utilities.data_analysis import ModelResultsMulti
 DIR = 'data_binary_classifier\\'
 args_model = {'model_type' : 'binary_classifier',
               'model_architecture' : 'JetRNN',
-              'layer_1_neurons' : 16,
-              'layer_2_neurons' : 4,
+              'layer_1_neurons' : 64,
+              'layer_2_neurons' : 8,
               'output_shape' : 1,
               'learning_rate' : 0.001,
               'batch_size' : 64,
