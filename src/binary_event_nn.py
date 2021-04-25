@@ -17,14 +17,15 @@ if __name__ == "__main__":
     DIR = 'data_binary_classifier\\'
     args_model = {'model_type' : 'binary_classifier',
                   'model_architecture' : 'EventNN',
-                  'layer_1_neurons' : 64,
+                  'layer_1_neurons' : 16,
                   'layer_2_neurons' : 8,
+                  'output_shape' : 1,
                   'learning_rate' : 0.001,
                   'batch_size' : 64,
                   'epochs' : 8,
-                  'model' : 'base2'}
+                  'model' : 'base'}
 
-    num_runs = 5
+    num_runs = 10
     dataset_sample = 0.25
     
     all_results = ModelResultsMulti()
