@@ -20,7 +20,7 @@ else:
 
 # -----------------------------------------------------------------------------  
 
-def base(layer1, layer2, input_shape=[None, 8]):
+def base(args):
     """
     This function creates a neural network capable of taking as input the 
     variable length jet data in the form of a ragged tensor. This consists
@@ -28,14 +28,17 @@ def base(layer1, layer2, input_shape=[None, 8]):
 
     Parameters
     ----------
-    layer1 : int
-        Number of neurons in layer 1, the LSTM layer.
-    layer2 : int
-        Number of neurons in layer 2.
-    input_shape : list, optional
-        The shape of jet event. The first entry 'None' specifies an unknown
-        number of jets. The second entry (with default of 6), the number of 
-        variables which characterise a single jet. 
+    args : dict
+        Dictionary of values to use in creating the model.
+        Contains the following values as an example:
+             {'layer_1_neurons' : 16,
+              'layer_2_neurons' : 4,
+              'output_shape' : 1,
+              'learning_rate' : 0.001}
+             
+    input_shape : The shape of jet event. The first entry 'None' specifies an 
+        unknown number of jets. The second entry (with default of 6), the 
+        number of variables which characterise a single jet. 
 
     Returns
     -------
@@ -43,32 +46,21 @@ def base(layer1, layer2, input_shape=[None, 8]):
     """
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
-        layers.InputLayer(input_shape=input_shape, ragged=True),
-        layers.LSTM(layer1, kernel_initializer='random_normal'),
-        layers.Dense(layer2, activation='relu', kernel_initializer='random_normal'),
-        layers.Dense(1, activation='sigmoid')
+        layers.InputLayer(input_shape=args['jet_layer_input_shape'], ragged=True),
+        layers.LSTM(args['layer_1_neurons'], kernel_initializer='random_normal'),
+        layers.Dense(args['layer_2_neurons'], activation='relu', kernel_initializer='random_normal'),
+        layers.Dense(args['output_shape'], activation='sigmoid')
     ])
     
     # Compile model
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
-    return model
-
-def base_custom_learn(input_shape=[None, 6], learning_rate=0.00003):
-    # Define an RNN with a single LSTM layer
-    model = keras.Sequential([
-        layers.InputLayer(input_shape=input_shape, ragged=True),
-        layers.LSTM(64),
-        layers.Dense(8, activation='relu'),
-        layers.Dense(1, activation='sigmoid')
-    ])
-    
-    # Compile model
-    opt = keras.optimizers.Adam(learning_rate=learning_rate)
+    if args['learning_rate'] == 0:
+        opt = keras.optimizers.Adam()
+    else:
+        opt = keras.optimizers.Adam(learning_rate=args['learning_rate'])
     model.compile(optimizer=opt,
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
+    
     return model
 
 def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):
