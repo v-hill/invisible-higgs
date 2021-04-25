@@ -40,7 +40,45 @@ class ModelResults():
         """
         self.time_elapsed = time.time() - self.time_start
         if verbose:
-            print(f"    Run {self.run_index} time: {self.time_elapsed:0.2f}s")
+            print(f'    Run {self.run_index} time: {self.time_elapsed:0.2f}s')
+            if not self.test_passed:
+                print('        Training failed, model rejected')
+        
+    def verify_training(self, neural_net, uniques_limit=250):
+        """
+        Check that the model correctly trained.
+        1) look at the number of unique predictions made by the model on the 
+           test dataset.
+
+        Parameters
+        ----------
+        neural_net : EventNN, JetRNN, CombinedNN
+            Keras model class.
+        uniques_limit : int, optional
+            Limit on the number of unique model predictions in order to say 
+            that the model successfully trained. The default is 250.
+
+        Returns
+        -------
+        bool
+            Returns True is model successfully trained, else False.
+        """
+        self.test_passed = True
+        
+        test_predictions = neural_net.predict_test_data()
+        num_unique = len(np.unique(test_predictions))
+        max_pred = max(test_predictions)
+        min_pred = min(test_predictions)
+        print(f'    len unique predictions: {num_unique}')
+        print(f'    min/max prediction: {min_pred}, {max_pred}')
+        
+        if num_unique <= uniques_limit:
+            self.test_passed = False
+            
+        if min_pred >= 0.1 or max_pred <= 0.9:
+            self.test_passed = False
+            
+        return self.test_passed
         
     def training_history(self, history):
         """
@@ -63,8 +101,8 @@ class ModelResults():
         Calculate confusion matrix and confusion matrix derived results.
         """
         # Get model predictions and convert predictions into binary values
-        labels_pred = neural_net.predict_test_data()
-        labels_pred_binary = np.where(labels_pred > cutoff_threshold, 1, 0)
+        test_predictions = neural_net.predict_test_data()
+        labels_pred_binary = np.where(test_predictions > cutoff_threshold, 1, 0)
         
         # Make confsuion matrix
         self.confusion_matrix = confusion_matrix(neural_net.labels_test(), 
@@ -91,16 +129,18 @@ class ModelResults():
 
         Parameters
         ----------
-        neural_net : EventNN, JetRNN
-            Keras model class
+        neural_net : EventNN, JetRNN, CombinedNN
+            Keras model class.
         sample_vals : int, optional
             The number of ROC curve values to keep. Saves a random sample
             of the full set of values. The default is 250.
         """
-        fpr, tpr, _ = roc_curve(neural_net.labels_test(), neural_net.predict_test_data())
+        test_predictions = neural_net.predict_test_data()
+        fpr, tpr, _ = roc_curve(neural_net.labels_test(), test_predictions)
         roc_auc = auc(fpr, tpr)
 
         indices = sorted(np.random.choice(len(fpr), sample_vals, replace=False))
+
         self.roc_fpr_vals = fpr[indices]
         self.roc_tpr_vals = tpr[indices]
         self.roc_auc = roc_auc
@@ -257,8 +297,9 @@ class ModelResultsMulti():
         data_std : numpy.ndarray
             Standard deviation values for each epoch.
         """
-        epochs = len(self.df_results[history_val].iloc[0])
-        all_data = self.df_results[history_val].values
+
+        all_data = self.df_results[history_val].dropna().values
+        epochs = len(all_data[0])
         all_data = np.concatenate(all_data)
         all_data = all_data.reshape([-1, epochs])
         data_mean = all_data.mean(axis=0)
@@ -276,7 +317,7 @@ class ModelResultsMulti():
         data_std : numpy.ndarray
             Standard deviation values of the confusion matrix.
         """
-        all_data = self.df_results['confusion_matrix'].values
+        all_data = self.df_results['confusion_matrix'].dropna().values
         all_data = np.concatenate(all_data, axis=0)
         all_data = all_data.reshape([-1, 2, 2])
         data_mean = all_data.mean(axis=0)
@@ -295,14 +336,15 @@ class ModelResultsMulti():
         results = {}
         results['roc_auc'] = self.df_results['roc_auc'].mean()
         
-        epochs = self.df_results.shape[0]
-        all_data_fpr = self.df_results['roc_fpr_vals'].values
+
+        all_data_fpr = self.df_results['roc_fpr_vals'].dropna().values
+        epochs = all_data_fpr.shape[0]
         all_data_fpr = np.concatenate(all_data_fpr, axis=0)
         all_data_fpr = all_data_fpr.reshape([epochs, -1])
         data_mean1 = all_data_fpr.mean(axis=0)
         results['roc_fpr_vals'] = data_mean1
 
-        all_data_tpr = self.df_results['roc_tpr_vals'].values
+        all_data_tpr = self.df_results['roc_tpr_vals'].dropna().values
         all_data_tpr = np.concatenate(all_data_tpr, axis=0)
         all_data_tpr = all_data_tpr.reshape([epochs, -1])
         data_mean2 = all_data_tpr.mean(axis=0)
