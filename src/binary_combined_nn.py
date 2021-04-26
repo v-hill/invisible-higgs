@@ -24,6 +24,7 @@ if __name__ == "__main__":
                   'rnn_layer_2_neurons' : 8,
                   'final_layer_neurons' : 8,
                   'output_shape' : 1,
+                  'loss_function' : 'binary_crossentropy',
                   'learning_rate' : 0,
                   'batch_size' : 64,
                   'epochs' : 16,
@@ -43,4 +44,4 @@ if __name__ == "__main__":
         all_results.add_result(model_result, args_model)
     
     df_all_results = all_results.return_results()
-    all_results.save('binary_commbined_nn.pkl')
+    all_results.save('binary_combined_nn.pkl')
