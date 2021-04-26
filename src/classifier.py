@@ -1,6 +1,5 @@
 """
-Binary classifier base functions common to the eventNN, JetRNN and complete
-neural network.
+Classifier base Class, eventNN, JetRNN and combined neural network.
 """
 
 # ---------------------------------- Imports ----------------------------------
@@ -21,9 +20,9 @@ import time
 
 # ----------------------------- Class definitions -----------------------------
 
-class BinaryClassifier():
+class Classifier():
     """
-    This class stores the base functions common to all binary classifier neural
+    This class stores the base functions common to all classifier neural 
     network models.
     """
     def __init__(self, args_model):
@@ -119,7 +118,7 @@ class BinaryClassifier():
 
 # -----------------------------------------------------------------------------
 
-class EventNN(BinaryClassifier):
+class EventNN(Classifier):
     """
     This class provides a wrapper for the data loading, model creating, model
     training and analysis of sequential keras models. 
@@ -149,11 +148,9 @@ class EventNN(BinaryClassifier):
             model.
         """
         tf.keras.backend.clear_session()
-        if model_name == 'base2':
-            self.model = sequential.base2(self.args_model['layer_1_neurons'], 
-                                          self.args_model['layer_2_neurons'], 
-                                          input_shape=self.args_model['event_layer_input_shape'],
-                                          learning_rate=self.args_model['learning_rate'])
+        del self.model
+        if model_name == 'base':
+            self.model = sequential.base(self.args_model)
 
     def train_model(self, verbose_level):
         """
@@ -218,7 +215,7 @@ class EventNN(BinaryClassifier):
 
 # -----------------------------------------------------------------------------
 
-class JetRNN(BinaryClassifier):
+class JetRNN(Classifier):
     """
     This class provides a wrapper for the data loading, model creating, model
     training and analysis of recurrent neural network keras models. 
@@ -266,9 +263,7 @@ class JetRNN(BinaryClassifier):
         tf.keras.backend.clear_session()
         del self.model
         if model_name == 'base':
-            self.model = recurrent.base(self.args_model['layer_1_neurons'], 
-                                        self.args_model['layer_2_neurons'], 
-                                        input_shape=self.args_model['jet_layer_input_shape'])
+            self.model = recurrent.base(self.args_model)
 
     def train_model(self, verbose_level):
         """
@@ -315,7 +310,7 @@ class JetRNN(BinaryClassifier):
 
 # -----------------------------------------------------------------------------
 
-class CombinedNN(BinaryClassifier):
+class CombinedNN(Classifier):
     """
     This class provides a wrapper for the data loading, model creating, model
     training and analysis of combined event feedforward network and the 
@@ -348,9 +343,8 @@ class CombinedNN(BinaryClassifier):
         """
         tf.keras.backend.clear_session()
         del self.model
-        if model_name == 'base1':
-            self.model = combined.base1(input_shape1=self.args_model['event_layer_input_shape'],
-                                        input_shape2=self.args_model['jet_layer_input_shape'])
+        if model_name == 'base':
+            self.model = combined.base(self.args_model)
             
     def train_model(self, verbose_level):
         """
@@ -368,13 +362,20 @@ class CombinedNN(BinaryClassifier):
             and metrics values at successive epochs, as well as validation 
             loss values and validation metrics values.
         """
+        if self.args_model['model_type']=='binary_classifier':
+            cols = 'label_encoding'
+        if self.args_model['model_type']=='multisignal_classifier':
+            cols = ['onehot_back1', 'onehot_back2', 'onehot_sig1', 'onehot_sig2']
+        
         data_train = self.df_event_data.iloc[:self.tt_split].values
         data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
         data_train_rt = self.jet_data_rt[:self.tt_split]
         data_test_rt = self.jet_data_rt[self.tt_split:self.dataset_end]
         
-        labels_train = self.df_labels['label_encoding'].iloc[:self.tt_split].values
-        labels_test = self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end].values
+        labels_train = self.df_labels[cols].iloc[:self.tt_split].values
+        labels_test = self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
+        
+        
         sample_weight = self.df_weights['sample_weight'].iloc[:self.tt_split].values
         
         history = self.model.fit(x=[data_train,data_train_rt], 
@@ -395,15 +396,37 @@ class CombinedNN(BinaryClassifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end]
+        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
         data_test_rt = self.jet_data_rt[self.tt_split:self.dataset_end]
         
         labels_pred = self.model.predict([data_test,data_test_rt])
         return labels_pred
     
-# -------------------------------- Run function -------------------------------
+# -------------------------------- Run functions ------------------------------
 
 def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
+    """
+    Train and evaluate a neural network once.
+
+    Parameters
+    ----------
+    index : int
+        Run index.
+    neural_net : EventNN, JetRNN, CombinedNN
+        Neural network to be trained.
+    args_model : dict
+        Dictionary of arguments hich define the model.
+    dataset_sample : float
+        Fraction of dataset to use in training. Value 0 to 1.
+    test_size : float, optional
+        Fraction of dataset to use as the test set. Value 0 to 1. 
+        The default is 0.2.
+
+    Returns
+    -------
+    model_result : ModelResults Class
+        Results of trained model
+    """
     # Make results object
     model_result = ModelResults(index)
     model_result.start_timer()
@@ -415,11 +438,46 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
         neural_net.make_ragged_tensor()
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
-    history = neural_net.train_model(verbose_level=0)
+    history = neural_net.train_model(verbose_level=2)
+    success = model_result.verify_training(neural_net)
     
     # Calculate results
-    model_result.training_history(history)
-    model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
-    model_result.roc_curve(neural_net)
+    if success:
+        model_result.training_history(history)
+        model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
+        model_result.roc_curve(neural_net)
+    model_result.stop_timer(verbose=True)
+    return model_result
+
+def run_multi(index, neural_net, args_model, dataset_sample, test_size=0.2):
+    """
+    Same as run() function but for the multisignal/multiclassifier networks.
+    
+    TODO: Sort out the confusion matrix and ROC curve functions for the 
+    multisignal networks so that this function can be merged with run().
+
+    Returns
+    -------
+    model_result : ModelResults Class
+        Results of trained model
+
+    """
+    # Make results object
+    model_result = ModelResults(index)
+    model_result.start_timer()
+    
+    # Create and train model
+    neural_net.shuffle_data()
+    neural_net.reduce_dataset(dataset_sample)
+    if isinstance(neural_net, (JetRNN, CombinedNN)):
+        neural_net.make_ragged_tensor()
+    neural_net.train_test_split(test_size)
+    neural_net.create_model(args_model['model'])
+    history = neural_net.train_model(verbose_level=2)
+    success = model_result.verify_training(neural_net)
+    
+    # Calculate results
+    if success:
+        model_result.training_history(history)
     model_result.stop_timer(verbose=True)
     return model_result

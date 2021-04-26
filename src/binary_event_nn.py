@@ -6,8 +6,7 @@ classify different event types.
 # ---------------------------------- Imports ----------------------------------
 
 # Code from other files in the repo
-import binary_classifier as bcn
-from binary_classifier import EventNN
+import classifier
 import utilities.plotlib as plotlib
 from utilities.data_analysis import ModelResultsMulti
 
@@ -17,23 +16,24 @@ if __name__ == "__main__":
     DIR = 'data_binary_classifier\\'
     args_model = {'model_type' : 'binary_classifier',
                   'model_architecture' : 'EventNN',
-                  'layer_1_neurons' : 64,
+                  'layer_1_neurons' : 16,
                   'layer_2_neurons' : 8,
+                  'output_shape' : 1,
                   'learning_rate' : 0.001,
                   'batch_size' : 64,
                   'epochs' : 8,
-                  'model' : 'base2'}
+                  'model' : 'base'}
 
-    num_runs = 5
+    num_runs = 10
     dataset_sample = 0.25
     
     all_results = ModelResultsMulti()
-    event_nn = EventNN(args_model)
+    event_nn = classifier.EventNN(args_model)
     event_nn.load_data(DIR)
     event_nn.load_event_data(DIR)
     
     for i in range(num_runs):
-        model_result = bcn.run(i, event_nn, args_model, dataset_sample)
+        model_result = classifier.run(i, event_nn, args_model, dataset_sample)
         all_results.add_result(model_result, args_model)
     
     df_all_results = all_results.return_results()

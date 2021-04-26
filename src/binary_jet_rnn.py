@@ -5,35 +5,38 @@ This file contains the training on the RNN model on the jet data.
 # ---------------------------------- Imports ----------------------------------
 
 # Code from other files in the repo
-import binary_classifier as bcn
-from binary_classifier import JetRNN
+import classifier
 import utilities.plotlib as plotlib
 from utilities.data_analysis import ModelResultsMulti
 
 # ------------------------------------ Main -----------------------------------
 
-DIR = 'data_binary_classifier\\'
-args_model = {'model_type' : 'binary_classifier',
-              'model_architecture' : 'JetRNN',
-              'layer_1_neurons' : 16,
-              'layer_2_neurons' : 4,
-              'batch_size' : 64,
-              'epochs' : 8,
-              'model' : 'base'}
-
-num_runs = 2
-dataset_sample = 0.1
-
-all_results = ModelResultsMulti()
-jet_rnn = JetRNN(args_model)
-jet_rnn.load_data(DIR)
-jet_rnn.load_jet_data(DIR)
-
-for i in range(num_runs):
-    model_result = bcn.run(i, jet_rnn, args_model, dataset_sample)
-    all_results.add_result(model_result, args_model)
-
-df_all_results = all_results.return_results()
+if __name__ == "__main__":
+    DIR = 'data_binary_classifier\\'
+    args_model = {'model_type' : 'binary_classifier',
+                  'model_architecture' : 'JetRNN',
+                  'layer_1_neurons' : 64,
+                  'layer_2_neurons' : 8,
+                  'output_shape' : 1,
+                  'learning_rate' : 0.001,
+                  'batch_size' : 64,
+                  'epochs' : 8,
+                  'model' : 'base'}
+    
+    num_runs = 10
+    dataset_sample = 0.25
+    
+    all_results = ModelResultsMulti()
+    jet_rnn = classifier.JetRNN(args_model)
+    jet_rnn.load_data(DIR)
+    jet_rnn.load_jet_data(DIR)
+    
+    for i in range(num_runs):
+        model_result = classifier.run(i, jet_rnn, args_model, dataset_sample)
+        all_results.add_result(model_result, args_model)
+    
+    df_all_results = all_results.return_results()
+    all_results.save('binary_jet_rnn.pkl')
 
 # -------------------------- Results plots parameters -------------------------
 
