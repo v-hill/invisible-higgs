@@ -66,9 +66,9 @@ class ModelResults():
         self.test_passed = True
         
         test_predictions = neural_net.predict_test_data()
-        num_unique = len(np.unique(test_predictions))
-        max_pred = max(test_predictions)
-        min_pred = min(test_predictions)
+        num_unique = len(np.unique(test_predictions, axis=0))
+        max_pred = test_predictions.max()
+        min_pred = test_predictions.min()
         print(f'    len unique predictions: {num_unique}')
         print(f'    min/max prediction: {min_pred}, {max_pred}')
         
