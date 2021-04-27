@@ -438,7 +438,7 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
         neural_net.make_ragged_tensor()
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
-    history = neural_net.train_model(verbose_level=2)
+    history = neural_net.train_model(verbose_level=0)
     success = model_result.verify_training(neural_net)
     
     # Calculate results
@@ -473,7 +473,7 @@ def run_multi(index, neural_net, args_model, dataset_sample, test_size=0.2):
         neural_net.make_ragged_tensor()
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
-    history = neural_net.train_model(verbose_level=2)
+    history = neural_net.train_model(verbose_level=0)
     success = model_result.verify_training(neural_net)
     
     # Calculate results
