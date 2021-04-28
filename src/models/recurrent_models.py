@@ -46,9 +46,13 @@ def base(args):
     """
     # Define an RNN with a single LSTM layer
     model = keras.Sequential([
-        layers.InputLayer(input_shape=args['jet_layer_input_shape'], ragged=True),
-        layers.LSTM(args['layer_1_neurons'], kernel_initializer='random_normal'),
-        layers.Dense(args['layer_2_neurons'], activation='relu', kernel_initializer='random_normal'),
+        layers.InputLayer(input_shape=args['jet_layer_input_shape'], 
+                          ragged=True),
+        layers.LSTM(args['layer_1_neurons'], 
+                    kernel_initializer='random_normal'),
+        layers.Dense(args['layer_2_neurons'], 
+                     activation='relu', 
+                     kernel_initializer='random_normal'),
         layers.Dense(args['output_shape'], activation='sigmoid')
     ])
     
@@ -60,7 +64,6 @@ def base(args):
     model.compile(optimizer=opt,
                   loss='binary_crossentropy',
                   metrics=['accuracy'])
-    
     return model
 
 def multi_labels_base(layer1, layer2, input_shape=[None, 6], output_shape=4):

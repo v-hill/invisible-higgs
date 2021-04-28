@@ -69,13 +69,13 @@ class ModelResults():
         num_unique = len(np.unique(test_predictions, axis=0))
         max_pred = test_predictions.max()
         min_pred = test_predictions.min()
-        # print(f'    len unique predictions: {num_unique}')
-        # print(f'    min/max prediction: {min_pred:0.4f}, {max_pred:0.4f}')
+        print(f'    len unique predictions: {num_unique}')
+        print(f'    min/max prediction: {min_pred:0.4f}, {max_pred:0.4f}')
         
         if num_unique <= uniques_limit:
             self.test_passed = False
             
-        if min_pred >= 0.1 or max_pred <= 0.9:
+        if min_pred >= 0.15 or max_pred <= 0.85:
             self.test_passed = False
             
         return self.test_passed
