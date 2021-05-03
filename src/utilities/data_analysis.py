@@ -145,6 +145,16 @@ class ModelResults():
         self.roc_tpr_vals = tpr[indices]
         self.roc_auc = roc_auc
         
+    def discriminator_hist(self, neural_net, num_bins=50):
+        labels_test = neural_net.labels_test()
+        labels_pred = neural_net.predict_test_data()
+        labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
+        labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
+        
+        self.bins = np.linspace(0, 1, num_bins)
+        self.signal_bin_vals, _ = np.histogram(labels_pred_signal, self.bins)
+        self.background_bin_vals, _ = np.histogram(labels_pred_background, self.bins)
+        
     def calc_significance(self, dataset, num_thresholds=200, ZA=True):
         """
         Calculate the significance plot.

@@ -24,8 +24,8 @@ if __name__ == "__main__":
                   'epochs' : 8,
                   'model' : 'base'}
 
-    num_runs = 10
-    dataset_sample = 0.25
+    num_runs = 1
+    dataset_sample = 1
     
     all_results = ModelResultsMulti()
     event_nn = classifier.EventNN(args_model)
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         all_results.add_result(model_result, args_model)
     
     df_all_results = all_results.return_results()
-    all_results.save('binary_event_nn.pkl')
+    # all_results.save('binary_event_nn.pkl')
 
 # -------------------------- Results plots parameters -------------------------
 
@@ -118,8 +118,10 @@ fig = plotlib.confusion_matrix(df_model_result, params_cm)
 fig = plotlib.plot_roc(df_model_result, params_roc)
 
 # Plot distribution of discriminator values
-fig = plotlib.plot_discriminator_vals(*event_nn.discriminator_values(), params_discrim)
+fig_nn = plotlib.plot_discriminator_vals(*event_nn.discriminator_values(), params_discrim)
 
 # Plot the signifiance plot
 sig_x, sig_y = model_result.calc_significance(event_nn.significance_dataset(), num_thresholds=200)
 fig = plotlib.significance(sig_x, sig_y, params_signif)
+
+discrim_vals_nn = event_nn.discriminator_values()

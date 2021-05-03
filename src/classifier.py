@@ -446,6 +446,7 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
         model_result.training_history(history)
         model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
         model_result.roc_curve(neural_net)
+        model_result.discriminator_hist(neural_net, 50)
     model_result.stop_timer(verbose=True)
     return model_result
 
