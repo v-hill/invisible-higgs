@@ -62,7 +62,10 @@ class Classifier():
         self.args_model['jet_layer_input_shape'] = [None, num_jet_cols]
         if verbose:
             print(f"    Elapsed jet data loading time: {time.time()-START:0.3f}s")
-            
+ 
+    def load_full_dataset(self, data_dir):
+        pass
+
     def shuffle_data(self):
         """
         Function to randomly shuffle the dataset.
