@@ -63,6 +63,12 @@ class Classifier():
         if verbose:
             print(f"    Elapsed jet data loading time: {time.time()-START:0.3f}s")
             
+    def load_full_dataset(self, data_dir, verbose=True):
+        START = time.time()
+        self.df_all_data = pd.read_pickle(data_dir+'df_all_data.pkl')
+        if verbose:
+            print(f"    Elapsed all data loading time: {time.time()-START:0.3f}s")
+            
     def shuffle_data(self):
         """
         Function to randomly shuffle the dataset.
