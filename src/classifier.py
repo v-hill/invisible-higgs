@@ -115,6 +115,15 @@ class Classifier():
             Event labels for the test dataset.
         """
         return self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end].values
+    
+    def multi_labels_test(self):
+        """
+        Returns event labels of the test dataset.
+        -------
+        TYPE
+            one hot encoded event labels for the test dataset.
+        """
+        return self.df_labels.iloc[self.tt_split:self.dataset_end,-4:].values
 
 # -----------------------------------------------------------------------------
 
@@ -232,6 +241,16 @@ class JetRNN(Classifier):
         """
         super().__init__(args_model)
         self.model = None
+        
+    def reverse_jet_order(self):
+        """
+        The jet data is ordered from highest to lowest transverse momentum pt,
+        this function reverses the order of the jets to see if it has any effect
+        on the training.
+
+        """
+        for col in self.df_jet_data.columns:
+            self.df_jet_data[col] = self.df_jet_data[col].apply(lambda x:x[::-1])
         
     def make_ragged_tensor(self, verbose=False):
         """
@@ -362,10 +381,7 @@ class CombinedNN(Classifier):
             and metrics values at successive epochs, as well as validation 
             loss values and validation metrics values.
         """
-        if self.args_model['model_type']=='binary_classifier':
-            cols = 'label_encoding'
-        if self.args_model['model_type']=='multisignal_classifier':
-            cols = ['onehot_back1', 'onehot_back2', 'onehot_sig1', 'onehot_sig2']
+        cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
         
         data_train = self.df_event_data.iloc[:self.tt_split].values
         data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
@@ -444,9 +460,9 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
     # Calculate results
     if success:
         model_result.training_history(history)
+        model_result.discriminator_hist(neural_net, 50)
         model_result.confusion_matrix(neural_net, cutoff_threshold=0.5)
         model_result.roc_curve(neural_net)
-        model_result.discriminator_hist(neural_net, 50)
     model_result.stop_timer(verbose=True)
     return model_result
 
@@ -480,5 +496,7 @@ def run_multi(index, neural_net, args_model, dataset_sample, test_size=0.2):
     # Calculate results
     if success:
         model_result.training_history(history)
+        model_result.multi_class_roc_curve(neural_net)
+        model_result.multi_class_confusion_matrix(neural_net)
     model_result.stop_timer(verbose=True)
     return model_result
