@@ -123,7 +123,9 @@ class Classifier():
         TYPE
             one hot encoded event labels for the test dataset.
         """
-        return self.df_labels.iloc[self.tt_split:self.dataset_end,-4:].values
+        cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
+        
+        return self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
 
 # -----------------------------------------------------------------------------
 
