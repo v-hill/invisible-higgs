@@ -42,7 +42,7 @@ def write_args_to_txt(args):
 
 # Use 'input_dataset'='old' for old dataset, 'input_dataset'='new' for new dataset
 # For 'weight_col', choice of 'weight_nominal' or 'xs_weight'
-args = {'dir_root' : 'C:\\Users\\user\\Documents\\Fifth Year\\ml_postproc\\',
+args = {'dir_root' : 'C:\\..........\\ml_postproc',
         'input_dataset' : 'new',
         'output_datasets' : ['binary_classifier', 'multi_classifier', 'multisignal_classifier'],
         'chosen_output' : 'multisignal_classifier',
@@ -69,7 +69,8 @@ else:
                                'ZJetsToNuNu',
                                'ZH125',
                                'VBF125',
-                               'ggF125']
+                               'ggF125',
+                               'QCD']
 
 # -------------------------------- Load in data -------------------------------
 
@@ -137,7 +138,7 @@ elif args['chosen_output']=='multisignal_classifier':
             data_dict[dataset] = 'wjets'
         elif 'ZJetsToNuNu' in dataset:
             data_dict[dataset] = 'zjets'
-        elif 'QCD_HT' in dataset:
+        elif 'QCD' in dataset:
             data_dict[dataset] = 'QCD'
             
     data.label_signal_noise_multi(data_dict)
@@ -183,7 +184,7 @@ pickle.dump(encoding_dict, open(args['dir_output']+'encoding_dict.pkl', 'wb' ))
 pickle.dump(args, open(args['dir_output']+'data_preprocessing_arguments.pkl', 'wb' ))
 write_args_to_txt(args)
 
-# data.data.to_pickle(args['dir_output']+'df_all_data.pkl')
+data.data.to_pickle(args['dir_output']+'df_all_data.pkl')
 df_labels.to_pickle(args['dir_output']+'df_labels.pkl')
 df_weights.to_pickle(args['dir_output']+'df_weights.pkl')
 df_jet_data.to_pickle(args['dir_output']+'preprocessed_jet_data.pkl')
