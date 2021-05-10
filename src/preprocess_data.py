@@ -42,10 +42,10 @@ def write_args_to_txt(args):
 
 # Use 'input_dataset'='old' for old dataset, 'input_dataset'='new' for new dataset
 # For 'weight_col', choice of 'weight_nominal' or 'xs_weight'
-args = {'dir_root' : 'C:\\{Directory containing data}\\ml_postproc\\',
+args = {'dir_root' : 'C:\\Users\\user\\Documents\\Fifth Year\\ml_postproc\\',
         'input_dataset' : 'new',
         'output_datasets' : ['binary_classifier', 'multi_classifier', 'multisignal_classifier'],
-        'chosen_output' : 'binary_classifier',
+        'chosen_output' : 'multisignal_classifier',
         'set_diJet_mass_nan_to_zero' : True,
         'weight_col' : 'xs_weight',
         'timestamp' : datetime.today().strftime('%Y-%m-%d %H:%M:%S')}
@@ -65,7 +65,11 @@ else:
                                'TTToSemiLeptonic',
                                'WminusH125',
                                'WplusH125',
-                               'WJetsToLNu']
+                               'WJetsToLNu',
+                               'ZJetsToNuNu',
+                               'ZH125',
+                               'VBF125',
+                               'ggF125']
 
 # -------------------------------- Load in data -------------------------------
 
@@ -117,16 +121,25 @@ elif args['chosen_output']=='multi_classifier':
     df_labels = data.data[['raw_dataset', 'dataset'] + list(event_labels.columns)]
     
 elif args['chosen_output']=='multisignal_classifier':
-    data_dict = {'ttH125' : 'sig1',
-                 'TTTo2L2Nu' : 'back1',
-                 'TTToHadronic' : 'back1',
-                 'TTToSemiLeptonic' : 'back1',
-                 'WminusH125' : 'sig2',
-                 'WplusH125' : 'sig2'}
+    data_dict = {'ttH125' : 'tth',
+                 'TTTo2L2Nu' : 'ttbar',
+                 'TTToHadronic' : 'ttbar',
+                 'TTToSemiLeptonic' : 'ttbar',
+                 'WminusH125' : 'VH',
+                 'WplusH125' : 'VH',
+                 'ZH125': 'VH',
+                 'VBF125' : 'VBF',
+                 'ggF125' : 'ggF'}
+    
     all_datset_vals = data.data['dataset'].unique()
     for dataset in all_datset_vals:
         if 'WJetsToLNu' in dataset:
-            data_dict[dataset] = 'back2'
+            data_dict[dataset] = 'wjets'
+        elif 'ZJetsToNuNu' in dataset:
+            data_dict[dataset] = 'zjets'
+        elif 'QCD_HT' in dataset:
+            data_dict[dataset] = 'QCD'
+            
     data.label_signal_noise_multi(data_dict)
     event_labels, encoding_dict = LabelMaker.onehot_encoding(data.return_dataset_labels())
     data.set_dataset_labels(event_labels, onehot=True)
