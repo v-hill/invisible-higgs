@@ -107,14 +107,40 @@ class Classifier():
         test_size : float
             Size of the test datast as a fraction of the whole dataset (0 to 1).
         """
-        
         self.args_model['test_train_fraction'] = test_size
         training_size = 1-test_size
         test_train_split = int(len(self.df_labels[:self.dataset_end])*training_size)
         self.tt_split = test_train_split
         
-        self.train_idx = list(range(0,test_train_split))
+        self.train_idx = list(range(0, test_train_split))
         self.test_idx = list(range(test_train_split, self.dataset_end))
+        
+    def set_test_train_indices(self, idx_list, fold_num):
+        """
+        Manually set the indices for the testing and training data.
+
+        Parameters
+        ----------
+        idx_list : list
+            List of list of new indices.
+        fold_num : int
+            fold num
+        """
+        self.test_idx = idx_list[fold_num]
+        del idx_list[fold_num]
+        idx = [item for sublist in idx_list for item in sublist]
+        self.train_idx = idx
+        
+    def set_label_encoding(self, signal):
+        """
+        Update label encoding
+
+        Parameters
+        ----------
+        signal : str
+            Multisignal label to use as binary label.
+        """
+        self.df_labels['label_encoding'] = 1-np.asarray(self.df_labels[signal])
         
     def labels_test(self):
         """
@@ -130,10 +156,9 @@ class Classifier():
         Returns event labels of the test dataset.
         -------
         TYPE
-            one hot encoded event labels for the test dataset.
+            One hot encoded event labels for the test dataset.
         """
         cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
-        
         return self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
 
 # -----------------------------------------------------------------------------
@@ -409,10 +434,10 @@ class CombinedNN(Classifier):
         
         sample_weight = self.df_weights['sample_weight'].iloc[self.train_idx].values
         
-        history = self.model.fit(x=[data_train,data_train_rt], 
+        history = self.model.fit(x=[data_train, data_train_rt], 
                                  y=labels_train,
                                  batch_size=self.args_model['batch_size'],
-                                 validation_data=([data_test,data_test_rt], labels_test),
+                                 validation_data=([data_test, data_test_rt], labels_test),
                                  sample_weight=sample_weight,
                                  epochs=self.args_model['epochs'],
                                  verbose=verbose_level)
