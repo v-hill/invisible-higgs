@@ -105,10 +105,12 @@ class ModelResults():
         labels_pred_binary = np.where(test_predictions > cutoff_threshold, 1, 0)
         
         # Make confsuion matrix
-        self.confusion_matrix = confusion_matrix(neural_net.labels_test(), 
-                                                 labels_pred_binary)
+        cm = confusion_matrix(neural_net.labels_test(), labels_pred_binary)
+        cm = np.rot90(cm)
+        cm = np.rot90(cm)
+        print(cm)
+        self.confusion_matrix = cm
         
-        print(self.confusion_matrix)
         TP = self.confusion_matrix[0, 0]
         TN = self.confusion_matrix[1, 1]
         FP = self.confusion_matrix[1, 0]
@@ -367,6 +369,5 @@ class ModelResultsMulti():
         results['roc_tpr_vals'] = data_mean2
         
         results_df = pd.DataFrame([results])
-        
         return results_df.iloc[0]
         
