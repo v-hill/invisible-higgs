@@ -142,7 +142,7 @@ class ModelResults():
         roc_auc = auc(fpr, tpr)
 
         indices = sorted(np.random.choice(len(fpr), sample_vals-2, replace=False))
-        indices.append(0)
+        indices = [0]+indices
         indices.append(len(fpr)-1)
 
         self.roc_fpr_vals = fpr[indices]
