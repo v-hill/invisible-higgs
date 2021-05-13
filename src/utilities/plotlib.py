@@ -52,7 +52,7 @@ def training_history_plot(history_training_data, history_test_data, params, erro
                      yerr=error_bars[1], 
                      capsize=3, lw=1, ls='--' ,
                      color=params['colors'][1])
-        ax.annotate(f'max accuracy:\n{history_test_data[-1]:0.2f} \u00B1 {error_bars[1][-1]:0.2f}', 
+        ax.annotate(f'max accuracy:\n{history_test_data[-1]:0.3f} \u00B1 {error_bars[1][-1]:0.3f}', 
                     (epochs[-1], history_test_data[-1]), 
                     xytext=(10, -35), textcoords='offset points',
                     ha='right', va='center', 
@@ -118,8 +118,10 @@ def confusion_matrix(model_results, params):
         cm = model_results['confusion_matrix']
     except:
         cm = model_results
+    cm = np.rot90(cm)
+    cm = np.rot90(cm)
     cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=2)
-    
+
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j], horizontalalignment="center", color="k")
     
