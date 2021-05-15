@@ -72,7 +72,7 @@ def training_history_plot(history_training_data, history_test_data, params, erro
     plt.legend(params['legend'], loc='lower right')
     return fig
 
-def custom_cmap():
+def custom_cmap(colour='Greens'):
     """
     Makes nice colours for the confusion matrix so that the black text over 
     the top of each cell is still readable.
@@ -82,7 +82,7 @@ def custom_cmap():
     newcmp : matplotlib.colors.ListedColormap
         New colourmap
     """
-    modified = cm.get_cmap('Greens', 256)
+    modified = cm.get_cmap(colour, 256)
     newcmp = ListedColormap(modified(np.linspace(0.1, 0.75, 256)))
     return newcmp
 
@@ -159,6 +159,7 @@ def mulit_confusion_matrix(cm_list, class_names, network_names, figsize=(4, 4), 
     tickmarks = np.arange(len(class_names))
     plt.yticks(tickmarks,class_names)
     plt.xticks(tickmarks,class_names)
+    # colour = ['RdPu', 'Blues', 'Greens']
     
     for idx,ax in enumerate(axes):
         ax.set(adjustable='box', aspect='equal')
@@ -170,7 +171,7 @@ def mulit_confusion_matrix(cm_list, class_names, network_names, figsize=(4, 4), 
         else:
             pass
         
-        ax.imshow(cm_list[idx],interpolation='nearest', cmap=plt.cm.Reds)
+        ax.imshow(cm_list[idx],interpolation='nearest', cmap=custom_cmap())
         
         for i, j in itertools.product(range(cm_list[idx].shape[0]), range(cm_list[idx].shape[1])):
             ax.text(j, i, cm_list[idx][i, j], horizontalalignment="center", color="k")
