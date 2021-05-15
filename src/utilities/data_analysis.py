@@ -212,6 +212,60 @@ class ModelResults():
         sig_vals = np.asarray(sig_vals)
         self.max_significance = bin_centres_sig[sig_vals.argmax()]
         return bin_centres_sig, sig_vals
+    
+    def multi_class_roc_curve(self, neural_net, sample_vals=500):
+        '''
+        Calculates the ROC curve for a multi signal classifier.
+
+        Parameters
+        ----------
+        neural_net : TYPE
+            DESCRIPTION.
+        sample_vals : TYPE, optional
+            DESCRIPTION. The default is 500.
+
+        Returns
+        -------
+        None.
+
+        '''
+        class_labels = list(neural_net.encoding_dict.keys())
+        self.fpr = dict()
+        self.tpr = dict()
+        self.roc_auc = dict()
+
+        labels_test = neural_net.multi_labels_test()
+        labels_pred = neural_net.predict_test_data()
+
+        for idx, lab in enumerate(class_labels):
+            fpr_full, tpr_full, _ = roc_curve(labels_test[:, idx], labels_pred[:, idx])
+            self.roc_auc[lab] = auc(fpr_full, tpr_full)
+            
+            indices = sorted(np.random.choice(len(fpr_full), sample_vals, replace=False))
+            
+            self.fpr[lab] = fpr_full[indices]
+            self.tpr[lab] = tpr_full[indices]
+        
+        #Compute the micro-average ROC curve and ROC area for all classes
+        fpr_full, tpr_full, _ = roc_curve(labels_test.ravel(), labels_pred.ravel())
+        self.roc_auc["micro"] = auc(fpr_full, tpr_full)
+        
+        indices = sorted(np.random.choice(len(fpr_full), sample_vals, replace=False))
+        
+        self.fpr['micro'] = fpr_full[indices]
+        self.tpr['micro'] = tpr_full[indices]
+        
+    def multi_class_confusion_matrix(self, neural_net):
+        self.encoding_dict = neural_net.encoding_dict
+        
+        labels_test = neural_net.multi_labels_test()
+        labels_pred = neural_net.predict_test_data()
+        
+        labels_pred = np.argmax(labels_pred, axis=1)
+        labels_test = np.argmax(labels_test, axis=1)
+        
+        # Create confusion matrix
+        self.cm =  confusion_matrix(labels_test, labels_pred)
         
     def to_dict(self, floats_only=False):
         """
