@@ -107,11 +107,40 @@ class Classifier():
         test_size : float
             Size of the test datast as a fraction of the whole dataset (0 to 1).
         """
-        
         self.args_model['test_train_fraction'] = test_size
         training_size = 1-test_size
         test_train_split = int(len(self.df_labels[:self.dataset_end])*training_size)
         self.tt_split = test_train_split
+        
+        self.train_idx = list(range(0, test_train_split))
+        self.test_idx = list(range(test_train_split, self.dataset_end))
+        
+    def set_test_train_indices(self, idx_list, fold_num):
+        """
+        Manually set the indices for the testing and training data.
+
+        Parameters
+        ----------
+        idx_list : list
+            List of list of new indices.
+        fold_num : int
+            fold num
+        """
+        self.test_idx = idx_list[fold_num]
+        del idx_list[fold_num]
+        idx = [item for sublist in idx_list for item in sublist]
+        self.train_idx = idx
+        
+    def set_label_encoding(self, signal):
+        """
+        Update label encoding
+
+        Parameters
+        ----------
+        signal : str
+            Multisignal label to use as binary label.
+        """
+        self.df_labels['label_encoding'] = 1-np.asarray(self.df_labels[signal])
         
     def labels_test(self):
         """
@@ -120,17 +149,16 @@ class Classifier():
         TYPE
             Event labels for the test dataset.
         """
-        return self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end].values
+        return self.df_labels['label_encoding'].iloc[self.test_idx].values
     
     def multi_labels_test(self):
         """
         Returns event labels of the test dataset.
         -------
         TYPE
-            one hot encoded event labels for the test dataset.
+            One hot encoded event labels for the test dataset.
         """
         cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
-        
         return self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
 
 # -----------------------------------------------------------------------------
@@ -185,11 +213,12 @@ class EventNN(Classifier):
             and metrics values at successive epochs, as well as validation 
             loss values and validation metrics values.
         """
-        data_train = self.df_event_data.iloc[:self.tt_split]
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end]
-        labels_train = self.df_labels['label_encoding'].iloc[:self.tt_split]
-        labels_test = self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end]
-        sample_weight = self.df_weights['sample_weight'].iloc[:self.tt_split]
+        
+        data_train = self.df_event_data.iloc[self.train_idx]
+        data_test = self.df_event_data.iloc[self.test_idx]
+        labels_train = self.df_labels['label_encoding'].iloc[self.train_idx]
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_idx]
+        sample_weight = self.df_weights['sample_weight'].iloc[self.train_idx]
         
         history = self.model.fit(data_train, labels_train,
                                  batch_size=self.args_model['batch_size'],
@@ -208,7 +237,7 @@ class EventNN(Classifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end]
+        data_test = self.df_event_data.iloc[self.test_idx]
         labels_pred = self.model.predict(data_test)
         return labels_pred
     
@@ -222,8 +251,8 @@ class EventNN(Classifier):
     def significance_dataset(self):
         # Make dataset
         labels_pred = self.predict_test_data()
-        labels_test = self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end]
-        xs_weight = self.df_weights['xs_weight'].iloc[self.tt_split:self.dataset_end]
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_idx]
+        xs_weight = self.df_weights['xs_weight'].iloc[self.test_idx]
         
         dataset = pd.DataFrame(data=labels_pred, columns=['labels_pred'], index=labels_test.index)
         dataset['xs_weight'] = xs_weight*140000
@@ -259,7 +288,7 @@ class JetRNN(Classifier):
         """
         for col in self.df_jet_data.columns:
             self.df_jet_data[col] = self.df_jet_data[col].apply(lambda x:x[::-1])
-        
+            
     def make_ragged_tensor(self, verbose=False):
         """
         Transforms a pandas dataframe into a tf.RaggedTensor object.
@@ -308,11 +337,14 @@ class JetRNN(Classifier):
             and metrics values at successive epochs, as well as validation 
             loss values and validation metrics values.
         """
-        data_train = self.jet_data_rt[:self.tt_split]
-        data_test = self.jet_data_rt[self.tt_split:self.dataset_end]
-        labels_train = self.df_labels['label_encoding'].iloc[:self.tt_split].values
-        labels_test = self.df_labels['label_encoding'].iloc[self.tt_split:self.dataset_end].values
-        sample_weight = self.df_weights['sample_weight'].iloc[:self.tt_split].values
+
+        data_train = make_ragged_tensor(self.df_jet_data.iloc[self.train_idx])
+        data_test = make_ragged_tensor(self.df_jet_data.iloc[self.test_idx])
+        self.data_test = data_test
+        
+        labels_train = self.df_labels['label_encoding'].iloc[self.train_idx].values
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_idx].values
+        sample_weight = self.df_weights['sample_weight'].iloc[self.train_idx].values
         
         history = self.model.fit(data_train, labels_train,
                                  batch_size=self.args_model['batch_size'],
@@ -331,8 +363,7 @@ class JetRNN(Classifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.jet_data_rt[self.tt_split:self.dataset_end]
-        labels_pred = self.model.predict(data_test)
+        labels_pred = self.model.predict(self.data_test)
         return labels_pred
 
 # -----------------------------------------------------------------------------
@@ -390,22 +421,23 @@ class CombinedNN(Classifier):
             loss values and validation metrics values.
         """
         cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
+            
+        data_train = self.df_event_data.iloc[self.train_idx].values
+        data_test = self.df_event_data.iloc[self.test_idx].values
         
-        data_train = self.df_event_data.iloc[:self.tt_split].values
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
-        data_train_rt = self.jet_data_rt[:self.tt_split]
-        data_test_rt = self.jet_data_rt[self.tt_split:self.dataset_end]
+        data_train_rt = make_ragged_tensor(self.df_jet_data.iloc[self.train_idx])
+        data_test_rt = make_ragged_tensor(self.df_jet_data.iloc[self.test_idx])
+        self.data_test_rt = data_test_rt
         
-        labels_train = self.df_labels[cols].iloc[:self.tt_split].values
-        labels_test = self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
+        labels_train = self.df_labels[cols].iloc[self.train_idx].values
+        labels_test = self.df_labels[cols].iloc[self.test_idx].values
         
+        sample_weight = self.df_weights['sample_weight'].iloc[self.train_idx].values
         
-        sample_weight = self.df_weights['sample_weight'].iloc[:self.tt_split].values
-        
-        history = self.model.fit(x=[data_train,data_train_rt], 
+        history = self.model.fit(x=[data_train, data_train_rt], 
                                  y=labels_train,
                                  batch_size=self.args_model['batch_size'],
-                                 validation_data=([data_test,data_test_rt], labels_test),
+                                 validation_data=([data_test, data_test_rt], labels_test),
                                  sample_weight=sample_weight,
                                  epochs=self.args_model['epochs'],
                                  verbose=verbose_level)
@@ -420,10 +452,9 @@ class CombinedNN(Classifier):
         labels_pred : numpy.ndarray
             Predicted labels for the test dataset.
         """
-        data_test = self.df_event_data.iloc[self.tt_split:self.dataset_end].values
-        data_test_rt = self.jet_data_rt[self.tt_split:self.dataset_end]
-        
-        labels_pred = self.model.predict([data_test,data_test_rt])
+        data_test = self.df_event_data.iloc[self.test_idx].values
+
+        labels_pred = self.model.predict([data_test, self.data_test_rt])
         return labels_pred
     
 # -------------------------------- Run functions ------------------------------
@@ -458,8 +489,6 @@ def run(index, neural_net, args_model, dataset_sample, test_size=0.2):
     # Create and train model
     neural_net.shuffle_data()
     neural_net.reduce_dataset(dataset_sample)
-    if isinstance(neural_net, (JetRNN, CombinedNN)):
-        neural_net.make_ragged_tensor()
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
     history = neural_net.train_model(verbose_level=0)
@@ -478,9 +507,6 @@ def run_multi(index, neural_net, args_model, dataset_sample, test_size=0.2):
     """
     Same as run() function but for the multisignal/multiclassifier networks.
     
-    TODO: Sort out the confusion matrix and ROC curve functions for the 
-    multisignal networks so that this function can be merged with run().
-
     Returns
     -------
     model_result : ModelResults Class
@@ -494,8 +520,6 @@ def run_multi(index, neural_net, args_model, dataset_sample, test_size=0.2):
     # Create and train model
     neural_net.shuffle_data()
     neural_net.reduce_dataset(dataset_sample)
-    if isinstance(neural_net, (JetRNN, CombinedNN)):
-        neural_net.make_ragged_tensor()
     neural_net.train_test_split(test_size)
     neural_net.create_model(args_model['model'])
     history = neural_net.train_model(verbose_level=0)

@@ -105,9 +105,12 @@ class ModelResults():
         labels_pred_binary = np.where(test_predictions > cutoff_threshold, 1, 0)
         
         # Make confsuion matrix
-        self.confusion_matrix = confusion_matrix(neural_net.labels_test(), 
-                                                 labels_pred_binary)
-
+        cm = confusion_matrix(neural_net.labels_test(), labels_pred_binary)
+        cm = np.rot90(cm)
+        cm = np.rot90(cm)
+        print(cm)
+        self.confusion_matrix = cm
+        
         TP = self.confusion_matrix[0, 0]
         TN = self.confusion_matrix[1, 1]
         FP = self.confusion_matrix[1, 0]
@@ -122,6 +125,7 @@ class ModelResults():
         self.cm_recall = recall
         self.cm_precision = precision
         self.cm_f_score = f_score
+        self.cm_cutoff_threshold = cutoff_threshold
     
     def roc_curve(self, neural_net, sample_vals=250):
         """
@@ -136,14 +140,18 @@ class ModelResults():
             of the full set of values. The default is 250.
         """
         test_predictions = neural_net.predict_test_data()
-        fpr, tpr, _ = roc_curve(neural_net.labels_test(), test_predictions)
+        fpr, tpr, thresholds = roc_curve(neural_net.labels_test(), test_predictions)
         roc_auc = auc(fpr, tpr)
 
-        indices = sorted(np.random.choice(len(fpr), sample_vals, replace=False))
+        indices = sorted(np.random.choice(len(fpr), sample_vals-2, replace=False))
+        indices = [0]+indices
+        indices.append(len(fpr)-1)
 
         self.roc_fpr_vals = fpr[indices]
         self.roc_tpr_vals = tpr[indices]
+        self.roc_threshold_vals = thresholds[indices]
         self.roc_auc = roc_auc
+        print(f'    ROC AUC: {roc_auc:0.4f}')
         
     def discriminator_hist(self, neural_net, num_bins=50):
         labels_test = neural_net.labels_test()
@@ -415,6 +423,5 @@ class ModelResultsMulti():
         results['roc_tpr_vals'] = data_mean2
         
         results_df = pd.DataFrame([results])
-        
         return results_df.iloc[0]
         
