@@ -55,6 +55,12 @@ class Classifier():
         if verbose:
             print(f"    Elapsed event data loading time: {time.time()-START:0.3f}s")
             
+    def remove_variable(self, index):
+        print(f'column removed: {self.df_event_data.columns[index]}')
+        self.df_event_data = self.df_event_data.drop(self.df_event_data.columns[index], axis=1)
+        self.args_model['event_layer_input_shape'] = self.df_event_data.shape[1]
+        
+            
     def load_jet_data(self, data_dir, verbose=True):
         START = time.time()
         self.df_jet_data = pd.read_pickle(data_dir+'preprocessed_jet_data.pkl')
@@ -74,14 +80,24 @@ class Classifier():
         Function to randomly shuffle the dataset.
         """
         idx = np.random.permutation(self.df_labels.index)
-        self.df_labels = self.df_labels.reindex(idx)
-        self.df_weights = self.df_weights.reindex(idx)
+        self.df_labels.index = idx
+        self.df_labels = self.df_labels.sort_index()
+        
+        self.df_weights.index = idx
+        self.df_weights = self.df_weights.sort_index()
         try:
-            self.df_event_data = self.df_event_data.reindex(idx)
+            self.df_event_data.index = idx
+            self.df_event_data = self.df_event_data.sort_index()
         except:
             pass
         try:
-            self.df_jet_data = self.df_jet_data.reindex(idx)
+            self.df_jet_data.index = idx
+            self.df_jet_data = self.df_jet_data.sort_index()
+        except:
+            pass
+        try:
+            self.df_all_data.index = idx
+            self.df_all_data = self.df_all_data.sort_index()
         except:
             pass
 
@@ -127,8 +143,8 @@ class Classifier():
             fold num
         """
         self.test_idx = idx_list[fold_num]
-        del idx_list[fold_num]
-        idx = [item for sublist in idx_list for item in sublist]
+        idx_list_new = [item for i, item in enumerate(idx_list) if i!=fold_num]
+        idx = [item for sublist in idx_list_new for item in sublist]
         self.train_idx = idx
         
     def set_label_encoding(self, signal):
@@ -140,7 +156,7 @@ class Classifier():
         signal : str
             Multisignal label to use as binary label.
         """
-        self.df_labels['label_encoding'] = 1-np.asarray(self.df_labels[signal])
+        self.df_labels['label_encoding'] = np.asarray(self.df_labels[signal]).astype('int32')
         
     def labels_test(self):
         """
@@ -149,7 +165,12 @@ class Classifier():
         TYPE
             Event labels for the test dataset.
         """
-        return self.df_labels['label_encoding'].iloc[self.test_idx].values
+        try:
+            labels = self.df_labels['label_encoding'].iloc[self.test_idx].values
+        except:
+            cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
+            labels = self.df_labels[cols].iloc[self.test_idx].values
+        return labels
     
     def multi_labels_test(self):
         """
@@ -160,6 +181,13 @@ class Classifier():
         """
         cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
         return self.df_labels[cols].iloc[self.tt_split:self.dataset_end].values
+    
+    def discriminator_values(self):
+        labels_test = self.labels_test()
+        labels_pred = self.predict_test_data()
+        labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
+        labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
+        return labels_pred_signal, labels_pred_background
 
 # -----------------------------------------------------------------------------
 
@@ -213,11 +241,20 @@ class EventNN(Classifier):
             and metrics values at successive epochs, as well as validation 
             loss values and validation metrics values.
         """
+        # test = self.df_event_data.iloc[self.train_idx].iloc[:100]
+        # test2 = self.df_all_data.iloc[self.train_idx].iloc[:100]
+        # test3 = self.train_idx[:100]
         
         data_train = self.df_event_data.iloc[self.train_idx]
         data_test = self.df_event_data.iloc[self.test_idx]
-        labels_train = self.df_labels['label_encoding'].iloc[self.train_idx]
-        labels_test = self.df_labels['label_encoding'].iloc[self.test_idx]
+        labels_train = self.df_labels['label_encoding'].iloc[self.train_idx].astype('int32')
+        labels_test = self.df_labels['label_encoding'].iloc[self.test_idx].astype('int32')
+        
+        print(f'training, signal: {labels_train.sum():7}, background: {(len(labels_train)-labels_train.sum()):7}, '
+              f'ratio: {(labels_train.sum())/len(labels_train):0.4f}')
+        print(f'testing,  signal: {labels_test.sum():7}, background: {len(labels_test)-labels_test.sum():7}, ' 
+               f'ratio: {(labels_test.sum())/len(labels_test):0.4f}')
+        
         sample_weight = self.df_weights['sample_weight'].iloc[self.train_idx]
         
         history = self.model.fit(data_train, labels_train,
@@ -241,13 +278,6 @@ class EventNN(Classifier):
         labels_pred = self.model.predict(data_test)
         return labels_pred
     
-    def discriminator_values(self):
-        labels_test = self.labels_test()
-        labels_pred = self.predict_test_data()
-        labels_pred_signal = labels_pred[np.array(labels_test, dtype=bool)]
-        labels_pred_background = labels_pred[np.invert(np.array(labels_test, dtype=bool))]
-        return labels_pred_signal, labels_pred_background
-
     def significance_dataset(self):
         # Make dataset
         labels_pred = self.predict_test_data()
@@ -421,7 +451,7 @@ class CombinedNN(Classifier):
             loss values and validation metrics values.
         """
         cols = [col for col in self.df_labels.columns if col not in ['raw_dataset', 'dataset']]
-            
+        # cols = 'label_encoding'
         data_train = self.df_event_data.iloc[self.train_idx].values
         data_test = self.df_event_data.iloc[self.test_idx].values
         
@@ -456,6 +486,7 @@ class CombinedNN(Classifier):
 
         labels_pred = self.model.predict([data_test, self.data_test_rt])
         return labels_pred
+    
     
 # -------------------------------- Run functions ------------------------------
 
