@@ -278,6 +278,18 @@ class EventNN(Classifier):
         labels_pred = self.model.predict(data_test)
         return labels_pred
     
+    def predict_all_data(self):
+        """
+        Return predictions of trainined model for the whole dataset.
+
+        Returns
+        -------
+        labels_pred : numpy.ndarray
+            Predicted labels for the test dataset.
+        """
+        labels_pred = self.model.predict(self.df_event_data)
+        return labels_pred
+    
     def significance_dataset(self):
         # Make dataset
         labels_pred = self.predict_test_data()
