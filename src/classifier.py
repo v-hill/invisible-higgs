@@ -224,6 +224,8 @@ class EventNN(Classifier):
         del self.model
         if model_name == 'base':
             self.model = sequential.base(self.args_model)
+        elif model_name == 'multi_class_base':
+            self.model = sequential.multi_class_base(self.args_model)
 
     def train_model(self, verbose_level):
         """
