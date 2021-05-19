@@ -96,7 +96,7 @@ def base_with_dropout(args, dropout=0.2):
                   metrics=['accuracy'])
     return model
 
-def multi_class_base(layer1, layer2, input_shape=11, output_shape=4):
+def multi_class_base(args):
     """
     This function creates a dense/fully connected neural network with 2 
     hidden layers for multi label classification.
@@ -113,12 +113,12 @@ def multi_class_base(layer1, layer2, input_shape=11, output_shape=4):
     model : keras.Sequential
     """
     model = keras.Sequential()
-    model.add(keras.Input(shape=(input_shape,)))
-    model.add(layers.Dense(layer1, activation='relu', 
+    model.add(keras.Input(shape=(args['event_layer_input_shape'],)))
+    model.add(layers.Dense(args['layer_1_neurons'], activation='relu', 
                            kernel_initializer='random_normal'))
-    model.add(layers.Dense(layer2, activation='relu', 
+    model.add(layers.Dense(args['layer_2_neurons'], activation='relu', 
                            kernel_initializer='random_normal'))
-    model.add(layers.Dense(output_shape, activation='softmax', 
+    model.add(layers.Dense(args['output_shape'], activation='softmax', 
                            kernel_initializer='random_normal'))
     
     # Compile model
